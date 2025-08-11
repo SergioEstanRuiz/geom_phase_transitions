@@ -1,5 +1,5 @@
 # Objective
-We'll just write down here to remember it 
+We'll just write down stuff here to remember it 
 
 # Where I am getting the code
 We'll try to put here where some of the code was obtained so that we can cite it appropriately
