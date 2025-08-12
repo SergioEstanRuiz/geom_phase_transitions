@@ -29,6 +29,11 @@ class ExperimentParams:
     weight_decay: float = 0.0002
     exp_name: str = "arithmetic_experiment1"
 
+    # Transformer specific parameters
+    use_transformer: bool = False  # Flag to use Transformer instead of MLP
+    num_heads: int = 4
+    num_layers: int = 2
+
 def test(model, dataset, device):
     n_correct = 0
     total_loss = 0

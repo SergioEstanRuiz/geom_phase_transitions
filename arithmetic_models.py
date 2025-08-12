@@ -21,3 +21,21 @@ class MLP(nn.Module):
         x = self.linear2(x) # linear layer to produce logits
         # No need for softmax here, as we use CrossEntropyLoss which applies softmax internally, so expects raw logits
         return x
+    
+    # TODO: Add transformer model class for modular arithmetic, compatible with the training script
+
+class Transformer(nn.Module):
+    def __init__(self, params):
+        super().__init__()
+        self.embedding = nn.Embedding(params.p, params.embed_dim)
+        encoder_layer = nn.TransformerEncoderLayer(params.embed_dim,params.num_heads)
+        self.transformer = nn.Transformer(encoder_layer, params.num_layers, params.hidden_size)
+        self.linear = nn.Linear(params.embed_dim, params.p)
+        self.vocab_size = params.p
+
+    def forward(self, x):
+        x_emb = self.embedding(x.long())
+        out = self.transformer(x_emb)
+        out = out.mean(dim=1)
+        out = self.linear(out)
+        return out
