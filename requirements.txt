@@ -1,0 +1,9 @@
+# Create requirements.txt file for the project
+torch>=2.8.0
+transformers>=4.20.0
+datasets>=2.0.0
+pandas>=1.3.0
+numpy>=1.21.0
+tqdm>=4.62.0
+devinterp>=1.3.2
+wandb>=0.21.1
