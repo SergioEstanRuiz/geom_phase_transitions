@@ -5,7 +5,7 @@ import torch.nn as nn
 import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-from arithmetic_models import MLP
+from arithmetic_models import MLP, Transformer
 from dataclasses import dataclass
 
 
@@ -27,10 +27,10 @@ class ExperimentParams:
     random_seed: int = 0 # Some seeds might not show grokking, or might appear later. 
     device: str = DEVICE
     weight_decay: float = 0.0002
-    exp_name: str = "arithmetic_experiment1"
+    exp_name: str = "arithmetic_experiment_test"
 
     # Transformer specific parameters
-    use_transformer: bool = False  # Flag to use Transformer instead of MLP
+    use_transformer: bool = True  # Flag to use Transformer instead of MLP
     num_heads: int = 4
     num_layers: int = 2
 
@@ -52,7 +52,10 @@ def test(model, dataset, device):
 
 def train(train_dataset, test_dataset, params, verbose=True):
     # all_models = []
-    model = MLP(params).to(params.device)
+    if params.use_transformer:
+        model = Transformer(params).to(params.device)
+    else:
+        model = MLP(params).to(params.device)
     optimizer = torch.optim.Adam(
         model.parameters(), weight_decay=params.weight_decay, lr=params.lr
     )

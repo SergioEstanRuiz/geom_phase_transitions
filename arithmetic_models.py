@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 
 
@@ -28,14 +29,19 @@ class Transformer(nn.Module):
     def __init__(self, params):
         super().__init__()
         self.embedding = nn.Embedding(params.p, params.embed_dim)
-        encoder_layer = nn.TransformerEncoderLayer(params.embed_dim,params.num_heads)
-        self.transformer = nn.Transformer(encoder_layer, params.num_layers, params.hidden_size)
+        encoder_layer = nn.TransformerEncoderLayer(params.embed_dim, params.num_heads)
+        self.transformer = nn.TransformerEncoder(encoder_layer, params.num_layers)
         self.linear = nn.Linear(params.embed_dim, params.p)
         self.vocab_size = params.p
 
     def forward(self, x):
-        x_emb = self.embedding(x.long())
+        x1 = self.embedding(x[..., 0])  # [batch_size, embed_dim] - first operand
+        x2 = self.embedding(x[..., 1])  # [batch_size, embed_dim] - second operand
+        
+        # Stack to create sequence: [batch_size, 2, embed_dim]
+        x_emb = torch.stack([x1, x2], dim=1)
+        x_emb = x_emb.transpose(0, 1)
         out = self.transformer(x_emb)
-        out = out.mean(dim=1)
+        out = out.mean(dim=0)             # Average over sequence length
         out = self.linear(out)
         return out
