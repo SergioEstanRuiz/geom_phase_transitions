@@ -1,38 +1,16 @@
-
+from utlis.produce_datasets import make_dataset, train_test_split
+from training import train, ExperimentParams
+import torch
+import os
+import pandas as pd
+from dataclasses import asdict
 from copy import deepcopy
 import pandas as pd
 import torch.nn as nn
-import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from arithmetic_models import MLP, Transformer
-from dataclasses import dataclass
-
-
-DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-
-# The @dataclass decorator automatically generates special methods for the class, such as __init__ and __repr__.
-# This is useful for classes that are primarily used to store data without much additional functionality.
-@dataclass
-class ExperimentParams:
-    p: int = 53
-    epochs: int = 25000
-    n_save_model_checkpoints: int = 100
-    print_times: int = 100
-    lr: float = 0.005
-    batch_size: int = 128
-    hidden_size: int = 48
-    embed_dim: int = 12
-    train_frac: float = 0.4
-    random_seed: int = 0 # Some seeds might not show grokking, or might appear later. 
-    device: str = DEVICE
-    weight_decay: float = 0.0002
-    exp_name: str = "arithmetic_experiment_test"
-
-    # Transformer specific parameters
-    use_transformer: bool = False  # Flag to use Transformer instead of MLP
-    num_heads: int = 4
-    num_layers: int = 2
+from configs import get_device, ExperimentParams
 
 def test(model, dataset, device):
     n_correct = 0
@@ -122,3 +100,25 @@ def train(train_dataset, test_dataset, params, verbose=True):
         print(f"Final Train Acc: {train_acc:.4f} | Final Train Loss: {train_loss:.4f}")
         print(f"Final Val Acc: {val_acc:.4f} | Final Val Loss: {val_loss:.4f}")
     return df
+
+DEVICE = get_device()  # Get the best available device
+
+params = ExperimentParams() # set parameters for the experiment
+os.makedirs(f"./results/{params.exp_name}/checkpoints", exist_ok=True) # create directory for checkpoints
+torch.manual_seed(params.random_seed) # set random seed for reproducibility
+
+dataset = make_dataset(params.p)
+train_data, test_data = train_test_split(dataset, params.train_frac, params.random_seed)
+# Save the dataset
+os.makedirs(f"./results/{params.exp_name}/datasets", exist_ok=True)
+torch.save(train_data, f"./results/{params.exp_name}/datasets/train_data.pt")
+torch.save(test_data, f"./results/{params.exp_name}/datasets/test_data.pt")
+
+df = train(
+    train_dataset=train_data, test_dataset=test_data, params=params
+)
+
+# Save results
+df.to_csv(f"./results/{params.exp_name}/loss_data.csv", index=False)
+df_params = pd.DataFrame([asdict(params)])  # Convert params to dictionary and then to DataFrame
+df_params.to_csv(f"./results/{params.exp_name}/params.csv", index=False)
