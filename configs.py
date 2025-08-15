@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 import torch
+import os
+import re
 
 
 def get_device():     # Maybe move to a utils.py file later.
@@ -18,13 +20,33 @@ def get_device():     # Maybe move to a utils.py file later.
         return torch.device("cpu")
 
 DEVICE = get_device()
+
+def get_next_exp_name(base_name: str = "arithmetic_experiment") -> str:
+    """Generate next available experiment name with serial number"""
+    results_dir = "./results"
     
+    if not os.path.exists(results_dir):
+        return f"{base_name}_001"
+    
+    # Find existing experiments with this base name
+    existing_nums = []
+    pattern = rf"{re.escape(base_name)}_(\d+)"
+    
+    for dirname in os.listdir(results_dir):
+        match = re.match(pattern, dirname)
+        if match:
+            existing_nums.append(int(match.group(1)))
+    
+    # Get next number
+    next_num = max(existing_nums, default=0) + 1
+    return f"{base_name}_{next_num:03d}"
+
 # The @dataclass decorator automatically generates special methods for the class, such as __init__ and __repr__.
 # This is useful for classes that are primarily used to store data without much additional functionality.
 @dataclass
 class ExperimentParams:
 
-    exp_name: str = "arithmetic_experiment_test2"
+    exp_name: str = get_next_exp_name("arithmetic_experiment_test2")
 
     # Model parameters
     p: int = 53
