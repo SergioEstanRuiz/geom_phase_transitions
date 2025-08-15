@@ -28,12 +28,60 @@ def test(model, dataset, device):
                 n_correct += 1
     return n_correct / len(dataset), total_loss / len(dataset)
 
+def print_training_summary(params, model, train_size, test_size):
+    """Print summary before training starts"""
+    print("=" * 60)
+    print("TRAINING SETUP")
+    print("=" * 60)
+    
+    # Device info
+    device_name = str(params.device).upper()
+    if "cuda" in device_name.lower():
+        print(f"Device: {device_name} (NVIDIA GPU)")
+    elif "mps" in device_name.lower():
+        print(f"Device: {device_name} (Apple Silicon GPU)")
+    else:
+        print(f"Device: {device_name}")
+    
+    # Model info
+    model_type = "Transformer" if params.use_transformer else "MLP"
+    param_count = sum(p.numel() for p in model.parameters())
+    
+    print(f"\nModel Architecture:")
+    print(f"   Type: {model_type}")
+    print(f"   Parameters: {param_count:,}")
+    print(f"   Embedding Dim: {params.embed_dim}")
+    print(f"   Hidden Size: {params.hidden_size}")
+    print(f"   Activation: {params.activation}")
+    
+    if params.use_transformer:
+        print(f"   Heads: {params.num_heads}")
+        print(f"   Layers: {params.num_layers}")
+    
+    print(f"\nTraining Configuration:")
+    print(f"   Epochs: {params.epochs:,}")
+    print(f"   Learning Rate: {params.lr}")
+    print(f"   Batch Size: {params.batch_size}")
+    print(f"   Weight Decay: {params.weight_decay}")
+    
+    print(f"\nDataset:")
+    print(f"   Modular Arithmetic (p={params.p})")
+    print(f"   Training samples: {train_size:,}")
+    print(f"   Test samples: {test_size:,}")
+    
+    print("=" * 60)
+    print()
+
 def train(train_dataset, test_dataset, params, verbose=True):
     # all_models = []
     if params.use_transformer:
         model = Transformer(params).to(params.device)
     else:
         model = MLP(params).to(params.device)
+    
+    if verbose:
+        print_training_summary(params, model, len(train_dataset), len(test_dataset))
+    
     optimizer = torch.optim.Adam(
         model.parameters(), weight_decay=params.weight_decay, lr=params.lr
     )

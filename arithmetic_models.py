@@ -9,7 +9,14 @@ class MLP(nn.Module):
         self.linear1r = nn.Linear(params.embed_dim, params.hidden_size, bias=True)
         self.linear1l = nn.Linear(params.embed_dim, params.hidden_size, bias=True)
         self.linear2 = nn.Linear(params.hidden_size, params.p, bias=False)
-        self.act = nn.GELU()
+        if params.activation == "relu":
+            self.act = nn.ReLU()
+        elif params.activation == "gelu":
+            self.act = nn.GELU()
+        elif params.activation == "quad":
+            self.act = lambda x: x ** 2
+        else:
+            raise ValueError(f"Unknown activation function {params.activation}")
         self.vocab_size = params.p
 
     def forward(self, x):
