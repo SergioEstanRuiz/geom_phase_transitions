@@ -188,7 +188,7 @@ class LLCCalculator:
             if hasattr(exp_params, key):
                 setattr(exp_params, key, value)
         
-        # Get checkpoints
+        # Get checkpoints FIRST
         checkpoint_dir = os.path.join(exp_path, "checkpoints")
         checkpoints = sorted([
             os.path.join(checkpoint_dir, f) 
@@ -198,8 +198,14 @@ class LLCCalculator:
         
         print(f"Found {len(checkpoints)} checkpoints")
         
-        # Calculate LLC for each checkpoint
+        # Get the epochs where we have checkpoints
+        checkpoint_epochs = [int(cp.split('_')[-1].replace('.pt', '')) for cp in checkpoints]
+        print(f"Checkpoint epochs: {checkpoint_epochs}")
+        
+        # Calculate LLC for ALL checkpoints first
         results = []
+        llc_values = []
+        
         for checkpoint_path in tqdm(checkpoints, desc="Processing checkpoints"):
             try:
                 epoch = int(checkpoint_path.split('_')[-1].replace('.pt', ''))
@@ -232,11 +238,110 @@ class LLCCalculator:
                 
                 llc_value = llc_result['llc/mean']
                 results.append((epoch, llc_value))
+                llc_values.append(llc_value)
                 
+                tqdm.write(f"Epoch {epoch}: LLC = {llc_value:.4f}")
+        
             except Exception as e:
                 print(f"Error processing epoch {epoch}: {e}")
         
-        # Save results
+        # NOW log to wandb with aligned data
+        if llc_params.log:
+            config = {
+                **params_dict,
+                **llc_params.__dict__,
+                "model_type": "Transformer" if exp_params.use_transformer else "MLP",
+                "n_checkpoints": len(results)
+            }
+            
+            run = wandb.init(
+                project=exp_params.wandb_project,
+                entity=exp_params.wandb_entity,
+                name=f"llc_{exp_name}",
+                config=config,
+                tags=["arithmetic", "llc", exp_params.activation if hasattr(exp_params, 'activation') else "unknown"],
+                settings=wandb.Settings(
+                    _disable_stats=True,
+                    _disable_meta=True,
+                    console="off"
+                )
+            )
+            
+            # Load training data and filter to checkpoint epochs
+            loss_file = os.path.join(exp_path, "loss_data.csv")
+            if os.path.exists(loss_file):
+                print("Loading and aligning training data...")
+                training_data = pd.read_csv(loss_file)
+                
+                # Filter training data to only checkpoint epochs
+                epoch_col = "epoch" if "epoch" in training_data.columns else "batch"
+                training_data_filtered = training_data[training_data[epoch_col].isin(checkpoint_epochs)]
+                
+                print(f"Filtered training data from {len(training_data)} to {len(training_data_filtered)} points")
+                
+                # Create lists for plotting
+                train_accuracies = training_data_filtered["train_acc"].tolist()
+                train_losses = training_data_filtered["train_loss"].tolist()
+                val_accuracies = training_data_filtered["val_acc"].tolist()
+                val_losses = training_data_filtered["val_loss"].tolist()
+                
+                # Ensure same length as LLC data
+                min_length = min(len(llc_values), len(train_accuracies))
+                llc_values = llc_values[:min_length]
+                train_accuracies = train_accuracies[:min_length]
+                train_losses = train_losses[:min_length]
+                val_accuracies = val_accuracies[:min_length]
+                val_losses = val_losses[:min_length]
+                checkpoint_epochs = checkpoint_epochs[:min_length]
+                
+                # Create plots like the working example
+                wandb.log({
+                    "accuracy_vs_llc": wandb.plot.line_series(
+                        xs=[[i for i in range(min_length)] for _ in range(3)],
+                        ys=[train_accuracies, val_accuracies, llc_values],
+                        keys=["train_accuracy", "val_accuracy", "llc_mean"],
+                        title=f"LLC vs Accuracy for {exp_name}",
+                        xname="Checkpoint Index"
+                    )
+                })
+                
+                wandb.log({
+                    "loss_vs_llc": wandb.plot.line_series(
+                        xs=[[i for i in range(min_length)] for _ in range(3)],
+                        ys=[train_losses, val_losses, llc_values],
+                        keys=["train_loss", "val_loss", "llc_mean"],
+                        title=f"LLC vs Loss for {exp_name}",
+                        xname="Checkpoint Index"
+                    )
+                })
+                
+                # Log individual metrics (aligned)
+                for i, (epoch, llc_val, train_acc, val_acc, train_loss, val_loss) in enumerate(
+                    zip(checkpoint_epochs, llc_values, train_accuracies, val_accuracies, train_losses, val_losses)
+                ):
+                    wandb.log({
+                        "checkpoint": i,
+                        "epoch": epoch,
+                        "llc_mean": llc_val,
+                        "train_accuracy": train_acc,
+                        "val_accuracy": val_acc,
+                        "train_loss": train_loss,
+                        "val_loss": val_loss
+                    })
+            
+            else:
+                # If no training data, just log LLC
+                for i, (epoch, llc_val) in enumerate(zip(checkpoint_epochs, llc_values)):
+                    wandb.log({
+                        "checkpoint": i,
+                        "epoch": epoch,
+                        "llc_mean": llc_val
+                    })
+            
+            print(f"✅ Logged {len(llc_values)} aligned data points to wandb")
+            wandb.finish()
+        
+        # Save results locally
         if results:
             df = pd.DataFrame(results, columns=['epoch', 'llc'])
             results_dir = f"./results/LLC/{exp_name}"
@@ -252,6 +357,25 @@ class LLCCalculator:
         
         # Setup data
         data_loader = self.setup_llm_data(model_name, llc_params.batch_size)
+        
+        # Initialize wandb if enabled
+        if llc_params.log:
+            # Use default ExperimentParams for wandb settings
+            default_params = ExperimentParams()
+            
+            config = {
+                **llc_params.__dict__,
+                "model_name": model_name,
+                "model_type": "LLM"
+            }
+            
+            run = wandb.init(
+                project=default_params.wandb_project,  # Use default settings
+                entity=default_params.wandb_entity,    # Use default settings
+                name=f"llc_{model_name.replace('/', '_')}",
+                config=config,
+                tags=["llm", "llc", model_name.split('/')[-1]]
+            )
         
         # Define checkpoints to analyze
         checkpoints = [0, 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1000, 2000, 5000, 10000]
@@ -291,6 +415,11 @@ class LLCCalculator:
                 llc_value = llc_result['llc/mean']
                 results.append((step, llc_value))
                 
+                # Log to wandb
+                if llc_params.log:
+                    wandb.log({"llc": llc_value, "training_step": step}, step=step)
+                    tqdm.write(f"Step {step}: LLC = {llc_value:.4f}")
+            
             except Exception as e:
                 print(f"Error processing step {step}: {e}")
         
@@ -303,6 +432,10 @@ class LLCCalculator:
             df.to_csv(f"{results_dir}/llc_results.csv", index=False)
             print(f"Results saved to {results_dir}/llc_results.csv")
         
+        # Finish wandb run
+        if llc_params.log:
+            wandb.finish()
+    
         return results
 
 def main():

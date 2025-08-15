@@ -1,5 +1,4 @@
-from utlis.produce_datasets import make_dataset, train_test_split
-from training import train, ExperimentParams
+from utils.produce_datasets import make_dataset, train_test_split
 import torch
 import os
 import pandas as pd
@@ -11,6 +10,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 from arithmetic_models import MLP, Transformer
 from configs import get_device, ExperimentParams
+import wandb
 
 def test(model, dataset, device):
     n_correct = 0
@@ -73,6 +73,28 @@ def print_training_summary(params, model, train_size, test_size):
     print()
 
 def train(train_dataset, test_dataset, params, verbose=True):
+    # Initialize wandb if enabled
+    wandb_run = None
+    if params.log_wandb:
+        wandb_run = wandb.init(
+            project=params.wandb_project,
+            entity=params.wandb_entity,
+            name=params.exp_name,
+            config=asdict(params),
+            tags=["training", "arithmetic", params.activation],
+            settings=wandb.Settings(
+                _disable_stats=True,
+                _disable_meta=True,
+                console="off"
+            )
+        )
+        
+        # Print wandb URL
+        if wandb_run:
+            print(f"Wandb logging enabled!")
+            print(f"View results at: {wandb_run.url}")
+            print()
+    
     # all_models = []
     if params.use_transformer:
         model = Transformer(params).to(params.device)
@@ -120,15 +142,26 @@ def train(train_dataset, test_dataset, params, verbose=True):
         if (i + 1) % print_every == 0:
             val_acc, val_loss = test(model, test_dataset, params.device)
             train_acc, train_loss = test(model, train_dataset, params.device)
-            loss_data.append(
-                {
-                    "batch": i + 1,
+            
+            loss_data.append({
+                "epoch": i + 1, 
+                "train_loss": train_loss,
+                "train_acc": train_acc,
+                "val_loss": val_loss,
+                "val_acc": val_acc,
+            })
+            
+            # Log to wandb - USE SEQUENTIAL STEP INSTEAD OF EPOCH
+            if params.log_wandb:
+                step_index = len(loss_data)  # This will be 1, 2, 3, ..., 100
+                wandb.log({
+                    "epoch": i + 1,          # Still log the actual epoch
                     "train_loss": train_loss,
                     "train_acc": train_acc,
                     "val_loss": val_loss,
                     "val_acc": val_acc,
-                }
-            )
+                }, step=step_index)         # Use sequential step instead of i+1
+            
             if verbose:
                 pbar.set_postfix(
                     {
@@ -147,6 +180,18 @@ def train(train_dataset, test_dataset, params, verbose=True):
     if verbose:
         print(f"Final Train Acc: {train_acc:.4f} | Final Train Loss: {train_loss:.4f}")
         print(f"Final Val Acc: {val_acc:.4f} | Final Val Loss: {val_loss:.4f}")
+    
+    # Print final wandb link
+    if params.log_wandb and wandb_run:
+        print()
+        print("=" * 60)
+        print("✅ Training completed!")
+        print(f"📊 View detailed results at: {wandb_run.url}")
+        print("=" * 60)
+    
+    if params.log_wandb:
+        wandb.finish()
+    
     return df
 
 DEVICE = get_device()  # Get the best available device

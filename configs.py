@@ -24,7 +24,7 @@ DEVICE = get_device()
 @dataclass
 class ExperimentParams:
 
-    exp_name: str = "arithmetic_experiment_test"
+    exp_name: str = "arithmetic_experiment_test2"
 
     # Model parameters
     p: int = 53
@@ -46,17 +46,21 @@ class ExperimentParams:
     # Checkpointing and logging
     n_save_model_checkpoints: int = 100
     print_times: int = 100
-    activation: str = "quad" # Options: "relu", "gelu", "quad"
+    activation: str = "relu" # Options: "relu", "gelu", "quad"
 
     # Base parameters
     random_seed: int = 0 
     device: torch.device = DEVICE
+
+    # Wandb configuration
+    log_wandb: bool = True
+    wandb_project: str = "geom_phase_transitions"
+    wandb_entity: str = "ben-cullen-universit-di-pisa"  # Your wandb username, or leave empty for default
  
 
 
 @dataclass
 class LLCParams:
-    model_name: str = "EleutherAI/pythia-70m"
     batch_size: int = 8
     llc_lr: float = 0.003
     llc_nbeta: float = 2.0

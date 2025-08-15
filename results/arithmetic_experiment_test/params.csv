@@ -1,0 +1,2 @@
+exp_name,p,embed_dim,hidden_size,use_transformer,num_heads,num_layers,epochs,lr,batch_size,weight_decay,train_frac,n_save_model_checkpoints,print_times,activation,random_seed,device,log_wandb,wandb_project,wandb_entity
+arithmetic_experiment_test,53,12,48,False,4,2,25000,0.005,128,0.0002,0.4,100,100,quad,0,mps,False,geom_phase_transitions,ben-cullen-universit-di-pisa
