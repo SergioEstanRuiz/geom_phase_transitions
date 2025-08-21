@@ -46,15 +46,17 @@ def get_next_exp_name(base_name: str = "arithmetic_experiment") -> str:
 @dataclass
 class ExperimentParams:
 
-    exp_name: str = get_next_exp_name("arithmetic_experiment_test2")
+    exp_name: str = get_next_exp_name("Transformer_Experiment_p53")  
 
     # Model parameters
     p: int = 53
     embed_dim: int = 12
     hidden_size: int = 48
+    activation: str = "relu" # Options: "relu", "gelu", "quad"
+
 
     # Transformer specific parameters
-    use_transformer: bool = False  # Flag to use Transformer instead of MLP
+    use_transformer: bool = True  # Flag to use Transformer instead of MLP
     num_heads: int = 4
     num_layers: int = 2
 
@@ -65,10 +67,10 @@ class ExperimentParams:
     weight_decay: float = 0.0002
     train_frac: float = 0.4
 
+
     # Checkpointing and logging
     n_save_model_checkpoints: int = 100
     print_times: int = 100
-    activation: str = "relu" # Options: "relu", "gelu", "quad"
 
     # Base parameters
     random_seed: int = 0 
