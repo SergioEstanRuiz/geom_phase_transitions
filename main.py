@@ -1,4 +1,4 @@
-from utlis.produce_datasets import make_dataset, train_test_split
+from utils.produce_datasets import make_dataset, train_test_split
 from training import train, ExperimentParams
 import torch
 import os

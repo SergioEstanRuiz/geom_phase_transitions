@@ -1,4 +1,3 @@
-
 from copy import deepcopy
 import pandas as pd
 import torch.nn as nn
@@ -16,8 +15,8 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 @dataclass
 class ExperimentParams:
     p: int = 53
-    epochs: int = 25000
-    n_save_model_checkpoints: int = 100
+    epochs: int = 20000
+    n_save_model_checkpoints: int = 400
     print_times: int = 100
     lr: float = 0.005
     batch_size: int = 128
@@ -27,7 +26,7 @@ class ExperimentParams:
     random_seed: int = 0 # Some seeds might not show grokking, or might appear later. 
     device: str = DEVICE
     weight_decay: float = 0.0002
-    exp_name: str = "arithmetic_experiment1"
+    exp_name: str = "arithmetic_experiment3"
 
 def test(model, dataset, device):
     n_correct = 0
