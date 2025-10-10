@@ -1,0 +1,2 @@
+p,epochs,n_save_model_checkpoints,print_times,lr,batch_size,hidden_size,embed_dim,train_frac,random_seed,device,weight_decay,exp_name
+53,25000,200,100,0.005,128,48,12,0.4,0,cpu,0.0002,arithmetic_experiment_p=53

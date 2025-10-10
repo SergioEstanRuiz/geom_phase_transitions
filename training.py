@@ -15,8 +15,8 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 @dataclass
 class ExperimentParams:
     p: int = 53
-    epochs: int = 20000
-    n_save_model_checkpoints: int = 400
+    epochs: int = 25000
+    n_save_model_checkpoints: int = 200
     print_times: int = 100
     lr: float = 0.005
     batch_size: int = 128

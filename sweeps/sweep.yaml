@@ -1,0 +1,13 @@
+method: grid
+program: ./sweeps/sweep_main.py
+project: geom_phase_transitions
+metric:
+  name: test_acc
+  goal: maximize
+parameters:
+  p:
+    values: [13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107, 109, 113]
+  train_fac:
+    values: [0.4,0.5,0.6,0.7,0.8,0.9]
+  weight_decay:
+    values: [0.0001, 0.001, 0.01, 0.1]
