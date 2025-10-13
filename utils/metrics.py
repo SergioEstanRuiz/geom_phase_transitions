@@ -1,5 +1,6 @@
 import numpy as np
-def empirical_correlation(x: list[float], y: list[float], tau: float) -> float:
+
+def empirical_correlation(x, y, tau: float) -> float:
     """Compute the empirical correlation between two lists of numbers.
 
     Args:
@@ -34,7 +35,7 @@ def empirical_correlation(x: list[float], y: list[float], tau: float) -> float:
 
     return correlation
 
-def list_lagged_correlation(x: list[float], y: list[float], max_lag: int) -> list[float]:
+def list_lagged_correlation(x, y, max_lag: int) -> list:
     """Compute the lagged correlation between two lists of numbers.
 
     Args:

@@ -1,3 +1,6 @@
+import sys
+# append the project root directory to the sys.path
+sys.path.append("/home/se24/geom_phase_transitions")
 from utils.produce_datasets import make_dataset, train_test_split
 from training import train, ExperimentParams
 import torch
@@ -8,6 +11,12 @@ from utils.LLC_calculation import compute_and_save_llc
 from utils.drawing import draw
 import wandb
 import copy
+from utils.cudaStuff import get_free_gpu
+
+# Select the computation device (ie. GPU if available)
+#gpu_id = get_free_gpu() # Get the GPU with the most free memory
+#device = torch.device(f"cuda:{gpu_id}" if torch.cuda.is_available() else "cpu")
+#print(f"Using device: {device}")
 
 def recursive_update(params: ExperimentParams, updates: dict):
     for k, v in updates.items():

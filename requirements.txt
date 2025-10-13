@@ -1,4 +1,4 @@
-torch
+torch==2.0.1
 pandas
 numpy
 matplotlib
@@ -10,3 +10,4 @@ seaborn
 transformers
 datasets
 devinterp
+pynvml
