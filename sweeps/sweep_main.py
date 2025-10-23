@@ -31,7 +31,7 @@ recursive_update(params, config)
 wandb.config.update(asdict(params))# upload the full config to wandb
 
 # Optional: rename run for tracking
-params.exp_name = f"sweep/p={params.p}_trainfacc={params.train_frac}_wdecay={params.weight_decay}"
+params.exp_name = f"sweep2/p={params.p}_embed={params.embed_dim}"
 
 os.makedirs(f"./results/{params.exp_name}/checkpoints", exist_ok=True) # create directory for checkpoints
 torch.manual_seed(params.random_seed) # set random seed for reproducibility
