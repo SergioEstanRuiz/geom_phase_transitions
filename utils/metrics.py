@@ -51,3 +51,24 @@ def list_lagged_correlation(x, y, max_lag: int) -> list:
         corr = empirical_correlation(x, y, tau)
         correlations.append(corr)
     return correlations
+
+def grokking_test1(test_acc):
+    if test_acc[-1] > 0.95:
+        return True
+    else:
+        return False
+
+def grokking_test2(train_acc, test_acc):
+    dummy = False
+    for i in range(len(train_acc)):
+        if train_acc[i] > 0.9 and test_acc[i] < 0.5:
+            dummy = True
+    if dummy:
+        if test_acc[-1] > 0.9:
+            return True
+    return False
+
+def grokking_test3(train_acc, test_acc):
+    level = (train_acc - test_acc).mean() # Riemann sum approximation of area between curves
+    mask = (test_acc[-1] > 0.9) and (train_acc[-1] > 0.9)
+    return level if mask else 0
