@@ -1,4 +1,5 @@
 import torch.nn as nn
+import torch
 
 
 class MLP(nn.Module):
@@ -21,3 +22,20 @@ class MLP(nn.Module):
         x = self.linear2(x) # linear layer to produce logits
         # No need for softmax here, as we use CrossEntropyLoss which applies softmax internally, so expects raw logits
         return x
+    
+class paperModel(nn.Module):
+    def __init__(self, params):
+        super().__init__()
+        self.p = params.p
+        self.K = params.embed_dim
+        self.W = nn.Linear(2*self.p, self.K, bias=False)  # Input to embedding
+        self.V = nn.Linear(self.K, self.p, bias=False)    # Embedding to output
+    
+    def forward(self, x):
+        # One-hot encode the inputs
+        # x1_onehot = nn.functional.one_hot(x[..., 0], num_classes=self.p).float() 
+        # x2_onehot = nn.functional.one_hot(x[..., 1], num_classes=self.p).float()
+        # x_onehot = torch.cat([x1_onehot, x2_onehot], dim=-1)  # Concatenate one-hot vectors
+        z = (self.W(x)).pow(2)  # Linear transformation + square activation
+        Y_hat = self.V(z)       # Linear transformation to output space
+        return Y_hat

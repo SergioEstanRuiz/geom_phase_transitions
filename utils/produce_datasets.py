@@ -1,6 +1,7 @@
 # We'll produce the modular arithmetic datasets here.
 import random 
 import torch
+from torch import nn
 
 def deterministic_shuffle(lst, seed):
     random.seed(seed)
@@ -20,7 +21,11 @@ def make_dataset(p):
     data = []
     pairs = get_all_pairs(p)
     for a, b in pairs:
-        data.append((torch.tensor([a, b]), torch.tensor((a + b) % p)))
+        a_hot = nn.functional.one_hot(torch.tensor(a), num_classes=p).float()
+        b_hot = nn.functional.one_hot(torch.tensor(b), num_classes=p).float()
+        c = (a + b) % p
+        c_hot = nn.functional.one_hot(torch.tensor(c), num_classes=p).float()
+        data.append((torch.cat([a_hot, b_hot]), c_hot))
     return data
 
 

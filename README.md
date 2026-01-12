@@ -1,20 +1,8 @@
 ### Quick intro 
-The aim of this repo is to study geometric phase transitions in models during training, through the lens of singular learning theory. To this end, we are looking at a variety of models and phenomena, including:
-- Grokking in modular arithmetic models
-- Stagewise Development in LLMs
+The aim of this repo is to study geometric phase transitions in models during training, through the lens of singular learning theory. To this end, we are focusing on the phenomena of grokking as observed in a modular arithmetic task.
 
-### How this repo is structured: 
-Honestly, it's still a bit of a mess. We'll get it sorted it! Some information:
-- The idea is for `main.py` to control everything. Right now it only trains models. We could have it so that it can train models and then calculates LLC curves. This file calls auxiliary scripts like `training.py`, which controls how the training of the model is done, or `arithmetic_models.py`, where the different models used in the arithmetic task are placed, or `produce_datasets.py` which creates the modular arithmetic datasets. 
-- On the other hand, we have the `visualising_results.ipynb` which right now does the LLC calculations and then plots curves. 
 
-### To do:
-Plan what the aims of the project are and start creating tickets for people to help out. Some ideas are:
-- Change the current way hyperparameters are done, and using a config.yaml file. 
-- Move the LLC stuff onto an LLC file. 
-- Clean up the visualising file so that it only uploads saved data from previous calculations and then allows us to visualise it. 
-
-### Sweeps:
+### How to do sweeps:
 - `source venv/bin/activate; wandb sweep ./sweeps/sweep.yaml` --> creates the sweep
 - `screen -S agent1`--> creates a screen named agent1
 - `nvidia-smi` --> check which GPU has the most available memory

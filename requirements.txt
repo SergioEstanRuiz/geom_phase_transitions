@@ -1,4 +1,4 @@
-torch==2.0.1
+torch # torch==2.0.1, this was the old one, but devinterp wont run cause it's old
 pandas
 numpy
 matplotlib
