@@ -25,12 +25,12 @@ class ExperimentParams:
     lr: float = 0.005
     batch_size: int = 16
     hidden_size: int = 48
-    embed_dim: int = 2048
+    embed_dim: int = 1024
     train_frac: float = 0.4
     random_seed: int = 0 # Some seeds might not show grokking, or might appear later. 
     device: str = DEVICE
     weight_decay: float = 0.0002
-    exp_name: str = "arithmetic_experiment_centredLoss2"
+    exp_name: str = "run"
     optimiser: str = "adam" # Options: 'adam', 'sgd'
     loss: str = "mse" # Options: 'cross_entropy', 'mse', but mse is centred_loss
     num_chains: int = 3

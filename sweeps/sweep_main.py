@@ -24,7 +24,7 @@ def recursive_update(params: ExperimentParams, updates: dict):
         if k != "exp_name":
             setattr(params, k, v) # sets params.k = v
             params.exp_name = f"{params.exp_name}_{k}={v}" # update exp_name to reflect the change
-    params.exp_name = f"{updates['exp_name']}_{params.exp_name}"
+    params.exp_name = f"{updates['exp_name']}/{params.exp_name}"
 
 params = ExperimentParams() # set parameters for the experiment
 
