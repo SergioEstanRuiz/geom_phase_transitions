@@ -3,12 +3,14 @@ import pandas as pd
 import torch.nn as nn
 import torch
 from torch.utils.data import DataLoader
-from arithmetic_models import paperModel
+from arithmetic_models import paperModel, centred_loss
 from dataclasses import dataclass
 from devinterp.slt.sampler import estimate_learning_coeff_with_summary
 from devinterp.optim.sgld import SGLD
 from devinterp.slt.sampler import default_nbeta
 import warnings
+import os
+from utils.metrics import grokking_test3 as grokking_test
 
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
@@ -19,7 +21,7 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 class ExperimentParams:
     p: int = 53
     epochs: int = 25000
-    checkpoint_epochs: int = 500
+    checkpoint_epochs: int = 100
     lr: float = 0.005
     batch_size: int = 16
     hidden_size: int = 48
@@ -28,16 +30,18 @@ class ExperimentParams:
     random_seed: int = 0 # Some seeds might not show grokking, or might appear later. 
     device: str = DEVICE
     weight_decay: float = 0.0002
-    exp_name: str = "arithmetic_experiment3"
-    optimiser: str = "sgd"
-    loss: str = "mse"
+    exp_name: str = "arithmetic_experiment_centredLoss2"
+    optimiser: str = "adam" # Options: 'adam', 'sgd'
+    loss: str = "mse" # Options: 'cross_entropy', 'mse', but mse is centred_loss
     num_chains: int = 3
     num_draws: int = 500
     num_burnin: int = 100
+    activation: str = "quadratic"  # Options: 'relu', 'quadratic'
 
 def train(train_dataset, test_dataset, params, run=None):
     warnings.filterwarnings("ignore")
-    model = paperModel(params).to(params.device)
+    device = torch.device(params.device)
+    model = paperModel(params).to(device)
 
     if params.optimiser == "adam":
         optimizer = torch.optim.Adam(
@@ -51,15 +55,15 @@ def train(train_dataset, test_dataset, params, run=None):
     if params.loss == "cross_entropy":
         loss_fn = nn.CrossEntropyLoss()
     elif params.loss == "mse":
-        loss_fn = nn.MSELoss()
+        loss_fn = centred_loss()
 
     train_loader = DataLoader(train_dataset, batch_size=params.batch_size, shuffle=True)
 
     checkpoint_every = params.checkpoint_epochs
 
-    DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    llc_device = device
     amp_guard_factory = nullcontext
-    if DEVICE.type == "cpu":
+    if llc_device.type == "cpu":
         amp_guard_factory = _cpu_autocast_patch
 
     # you need model, dataset arguments for llc_calculation function
@@ -70,11 +74,13 @@ def train(train_dataset, test_dataset, params, run=None):
 
         with torch.no_grad():
             for x, y in dataset:
+                x = x.to(device)
+                y = y.to(device)
                 out = model(x)
                 loss = loss_fn(out, y)
                 total_loss += loss.item()
-                pred = torch.argmax(out) # get the index of the maximum log-probability
-                y_cat = torch.argmax(y)
+                pred = torch.argmax(out, dim=-1) # get the index of the maximum log-probability
+                y_cat = torch.argmax(y, dim=-1)
                 if pred == y_cat:
                     n_correct += 1
             return n_correct / len(dataset), total_loss / len(dataset)
@@ -82,13 +88,15 @@ def train(train_dataset, test_dataset, params, run=None):
     def test_for_llc(model, dataset):
         # for the llc you only evaluate one instance of x and y 
         model.eval()
-        x = dataset[0]
-        y = dataset[1]
+        x, y = dataset
+        x = x.to(device)
+        y = y.to(device)
         out = model(x)
         loss = loss_fn(out, y)
         return loss, {"output": out} # you need this format for llc function
 
     loss_data = []
+    recent_val_acc = []  # track last few validation accuracies for early stopping
     for i in range(params.epochs):
         # Sample random batch of data
         batch = next(iter(train_loader))
@@ -104,6 +112,9 @@ def train(train_dataset, test_dataset, params, run=None):
         if (i + 1) % checkpoint_every == 0:
             val_acc, val_loss = test(model, test_dataset)
             train_acc, train_loss = test(model, train_dataset)
+            # Avoid distributed all_reduce inside devinterp LLC callback when running single-process on GPU
+            if llc_device.type == "cuda":
+                os.environ.setdefault("USE_SPMD", "1")
             with amp_guard_factory():
                 llc = estimate_learning_coeff_with_summary(
                         model,
@@ -115,8 +126,9 @@ def train(train_dataset, test_dataset, params, run=None):
                         num_draws=params.num_draws,  # How many samples to draw per chain
                         num_burnin_steps=params.num_burnin,  # How many samples to discard at the beginning of each chain
                         num_steps_bw_draws=1,  # How many steps to take between each sample
-                        device=DEVICE,
+                        device=llc_device,
                         online=False,
+                        verbose=False,
                     )['llc/mean']
             loss_data.append(
                 {
@@ -137,7 +149,15 @@ def train(train_dataset, test_dataset, params, run=None):
                     "llc": llc,
                 }
             )
+            recent_val_acc.append(val_acc)
+            if len(recent_val_acc) > 3:
+                recent_val_acc.pop(0)
+            if len(recent_val_acc) == 3 and all(acc >= 0.95 for acc in recent_val_acc):
+                print(f"Early stopping at epoch {i+1}: recent val accs {recent_val_acc}")
+                break
     df = pd.DataFrame(loss_data)
+    grokking = grokking_test(df["train_acc"], df["val_acc"])
+    run.log({"grokking_test": grokking})
     return df
 
 from contextlib import contextmanager, nullcontext

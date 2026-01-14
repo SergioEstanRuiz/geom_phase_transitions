@@ -69,6 +69,8 @@ def grokking_test2(train_acc, test_acc):
     return False
 
 def grokking_test3(train_acc, test_acc):
+    train_acc = np.array(train_acc)
+    test_acc = np.array(test_acc)
     level = (train_acc - test_acc).mean() # Riemann sum approximation of area between curves
     mask = (test_acc[-1] > 0.9) and (train_acc[-1] > 0.9)
     return level if mask else 0

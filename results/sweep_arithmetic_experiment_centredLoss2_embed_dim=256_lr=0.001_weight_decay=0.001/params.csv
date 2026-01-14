@@ -1,0 +1,2 @@
+p,epochs,checkpoint_epochs,lr,batch_size,hidden_size,embed_dim,train_frac,random_seed,device,weight_decay,exp_name,optimiser,loss,num_chains,num_draws,num_burnin,activation
+53,25000,100,0.001,16,48,256,0.4,0,cuda,0.001,sweep_arithmetic_experiment_centredLoss2_embed_dim=256_lr=0.001_weight_decay=0.001,adam,mse,3,500,100,quadratic
