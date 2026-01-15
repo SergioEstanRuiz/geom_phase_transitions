@@ -28,7 +28,7 @@ params = Params()
 
 # Upload pythia model and tokenizer
 checkpoint_list = [0, 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1000]
-checkpoint_list += [i * 1000 for i in range(2, 101)]
+checkpoint_list += [i * 1000 for i in range(2, 1001)]
 
 tokenizer = AutoTokenizer.from_pretrained(params.model_name)
 tokenizer.pad_token = tokenizer.eos_token  # Set pad token to be able to tokenize with padding
@@ -71,7 +71,7 @@ def evaluate(model, batch):
     }
 
 if params.log:
-    run = wandb.init(project="llc_for_llms",config=params)
+    run = wandb.init(project="geom_phase_transitions",config=params)
 
 llcs = []
 os.makedirs(f"./results/{params.model_name}", exist_ok=True)
@@ -95,5 +95,5 @@ for checkpoint in tqdm(checkpoint_list):
     llcs.append((checkpoint, llc))
 
 # Save the results
-llcs_df = pd.DataFrame(llcs, columns=["revision", "llc"])
-llcs_df.to_csv(f"./results/{params.model_name}/llc_results.csv", index=False)
+llcs_df = pd.DataFrame(llcs, columns=["checkpoints", "llc"])
+llcs_df.to_csv(f"./results/{params.model_name}/experiment2/llc_results.csv", index=False)
