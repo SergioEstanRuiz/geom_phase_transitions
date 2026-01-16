@@ -38,6 +38,9 @@ class ExperimentParams:
     num_burnin: int = 100
     activation: str = "quadratic"  # Options: 'relu', 'quadratic'
     model_type: str = "MLP"  # Options: 'MLP', 'transformer', 'paper'
+    num_layers: int = 1  # For transformer model
+    nhead: int = 2       # For transformer model
+    dim_feedforward: int = 128  # For transformer model
 
 def train(train_dataset, test_dataset, params, run=None):
     warnings.filterwarnings("ignore")

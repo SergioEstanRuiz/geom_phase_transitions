@@ -27,8 +27,8 @@ class transformerModel(nn.Module):
     def __init__(self, params):
         super().__init__()
         self.embedding = nn.Embedding(params.p, params.embed_dim) 
-        encoder_layer = nn.TransformerEncoderLayer(d_model=params.embed_dim, nhead=1, dim_feedforward=64, activation='gelu')
-        self.transformer_encoder = nn.TransformerEncoder(encoder_layer, num_layers=1)
+        encoder_layer = nn.TransformerEncoderLayer(d_model=params.embed_dim, nhead=params.nhead, dim_feedforward=params.dim_feedforward, activation='gelu')
+        self.transformer_encoder = nn.TransformerEncoder(encoder_layer, num_layers=params.num_layers)
         self.linear_out = nn.Linear(params.embed_dim, params.p, bias=False)
         self.p = params.p
 
