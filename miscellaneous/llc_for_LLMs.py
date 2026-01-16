@@ -11,6 +11,8 @@ import os
 import pandas as pd
 import wandb
 
+os.environ.setdefault("USE_SPMD", "1")
+
 # PARAMETERS - to be cleaned up
 @dataclass
 class Params:
@@ -88,6 +90,7 @@ for checkpoint in tqdm(checkpoint_list):
     num_draws=params.num_draws,
     device=params.device,
     online=False,
+    verbose=False,
     )['llc/mean']
     if params.log:
         run.log({"checkpoint": checkpoint,

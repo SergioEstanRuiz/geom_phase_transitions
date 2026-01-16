@@ -3,7 +3,7 @@ import pandas as pd
 import torch.nn as nn
 import torch
 from torch.utils.data import DataLoader
-from arithmetic_models import paperModel, centred_loss
+from arithmetic_models import paperModel, centred_loss, MLP, transformerModel
 from dataclasses import dataclass
 from devinterp.slt.sampler import estimate_learning_coeff_with_summary
 from devinterp.optim.sgld import SGLD
@@ -19,29 +19,35 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 # This is useful for classes that are primarily used to store data without much additional functionality.
 @dataclass
 class ExperimentParams:
-    p: int = 53
+    p: int = 71
     epochs: int = 25000
     checkpoint_epochs: int = 100
     lr: float = 0.005
-    batch_size: int = 16
+    batch_size: int = 32
     hidden_size: int = 48
-    embed_dim: int = 1024
+    embed_dim: int = 24
     train_frac: float = 0.4
     random_seed: int = 0 # Some seeds might not show grokking, or might appear later. 
     device: str = DEVICE
-    weight_decay: float = 0.0002
-    exp_name: str = "run"
+    weight_decay: float = 0.0005
+    exp_name: str = "MLP_model"
     optimiser: str = "adam" # Options: 'adam', 'sgd'
     loss: str = "mse" # Options: 'cross_entropy', 'mse', but mse is centred_loss
     num_chains: int = 3
     num_draws: int = 500
     num_burnin: int = 100
     activation: str = "quadratic"  # Options: 'relu', 'quadratic'
+    model_type: str = "MLP"  # Options: 'MLP', 'transformer', 'paper'
 
 def train(train_dataset, test_dataset, params, run=None):
     warnings.filterwarnings("ignore")
     device = torch.device(params.device)
-    model = paperModel(params).to(device)
+    if params.model_type == "paper":
+        model = paperModel(params).to(device)
+    elif params.model_type == "transformer":
+        model = transformerModel(params).to(device)
+    elif params.model_type == "MLP":
+        model = MLP(params).to(device)
 
     if params.optimiser == "adam":
         optimizer = torch.optim.Adam(

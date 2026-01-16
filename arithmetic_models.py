@@ -10,17 +10,38 @@ class MLP(nn.Module):
         self.linear1l = nn.Linear(params.embed_dim, params.hidden_size, bias=True)
         self.linear2 = nn.Linear(params.hidden_size, params.p, bias=False)
         self.act = nn.GELU()
-        self.vocab_size = params.p
+        self.p = params.p
 
     def forward(self, x):
-        x1 = self.embedding(x[..., 0]) # x[..., 0] is the first element of the pair, then embedded
-        x2 = self.embedding(x[..., 1]) # x[..., 1] is the second element of the pair, then embedded
+        x1 = self.embedding(torch.argmax(x[..., 0:self.p], dim=-1).long())
+        x2 = self.embedding(torch.argmax(x[..., self.p:2*self.p], dim=-1).long())
         x1 = self.linear1l(x1)
         x2 = self.linear1r(x2)
         x = x1 + x2
         x = self.act(x) # non-linear activation
         x = self.linear2(x) # linear layer to produce logits
         # No need for softmax here, as we use CrossEntropyLoss which applies softmax internally, so expects raw logits
+        return x
+
+class transformerModel(nn.Module):
+    def __init__(self, params):
+        super().__init__()
+        self.embedding = nn.Embedding(params.p, params.embed_dim) 
+        encoder_layer = nn.TransformerEncoderLayer(d_model=params.embed_dim, nhead=1, dim_feedforward=64, activation='gelu')
+        self.transformer_encoder = nn.TransformerEncoder(encoder_layer, num_layers=1)
+        self.linear_out = nn.Linear(params.embed_dim, params.p, bias=False)
+        self.p = params.p
+
+
+    def forward(self, x):
+        x1 = torch.argmax(x[..., 0:self.p], dim=-1).long()
+        x2 = torch.argmax(x[..., self.p:2*self.p], dim=-1).long()
+        x1 = self.embedding(x1)  # Shape: (batch_size, embed_dim)
+        x2 = self.embedding(x2)  # Shape: (batch_size, embed_dim)
+        x = torch.stack((x1, x2), dim=0)  # Shape: (2, batch_size, embed_dim)
+        x = self.transformer_encoder(x)    # Transformer expects input shape (seq_len, batch_size, embed_dim)
+        x = x.mean(dim=0)                  # Aggregate over sequence length dimension
+        x = self.linear_out(x)             # Linear layer to produce logits
         return x
     
 class paperModel(nn.Module):
