@@ -1,0 +1,13 @@
+torch # torch==2.0.1, this was the old one, but devinterp wont run cause it's old
+pandas
+numpy
+matplotlib
+wandb
+tqdm
+scipy
+scikit-learn
+seaborn
+transformers
+datasets
+devinterp
+pynvml

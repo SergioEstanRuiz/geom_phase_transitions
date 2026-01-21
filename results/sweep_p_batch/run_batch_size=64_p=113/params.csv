@@ -1,0 +1,2 @@
+p,epochs,checkpoint_epochs,lr,batch_size,embed_dim,train_frac,random_seed,device,weight_decay,exp_name,optimiser,loss,num_chains,num_draws,num_burnin,activation,model_type,hidden_size,num_layers,nhead,dim_feedforward
+113,100000,100,0.005,64,1024,0.4,0,cuda,0.0001,sweep_p_batch/run_batch_size=64_p=113,adam,mse,3,500,100,quadratic,paper,48,1,2,128
