@@ -19,16 +19,16 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 # This is useful for classes that are primarily used to store data without much additional functionality.
 @dataclass
 class ExperimentParams:
-    p: int = 139
+    p: int = 71
     epochs: int = 100000
     checkpoint_epochs: int = 100
-    lr: float = 0.005
-    batch_size: int = 32
+    lr: float = 0.01
+    batch_size: int = 64
     embed_dim: int = 1024
     train_frac: float = 0.4
     random_seed: int = 0 # Some seeds might not show grokking, or might appear later. 
     device: str = DEVICE
-    weight_decay: float = 0.0001
+    weight_decay: float = 0.00001
     exp_name: str = "run"
     optimiser: str = "adam" # Options: 'adam', 'sgd'
     loss: str = "mse" # Options: 'cross_entropy', 'mse', but mse is centred_loss
@@ -38,9 +38,11 @@ class ExperimentParams:
     activation: str = "quadratic"  # Options: 'relu', 'quadratic'
     model_type: str = "paper"  # Options: 'MLP', 'transformer', 'paper'
     hidden_size: int = 48 # for MLP model
-    num_layers: int = 1  # For transformer model
-    nhead: int = 2       # For transformer model
-    dim_feedforward: int = 128  # For transformer model
+    num_layers: int = 2  # For transformer model
+    nhead: int = 1       # For transformer model
+    dim_feedforward: int = 256  # For transformer model
+    SGLD_lr: float = 5e-4
+    SGLD_localisation: float = 5.0
 
 def train(train_dataset, test_dataset, params, run=None):
     run.define_metric(step_metric="training_step", name ="*")
@@ -132,7 +134,7 @@ def train(train_dataset, test_dataset, params, run=None):
                         loader=train_loader,
                         evaluate=test_for_llc,
                         sampling_method=SGLD,
-                        optimizer_kwargs=dict(lr=4e-4, localization=100.0, nbeta=default_nbeta(train_loader)),
+                        optimizer_kwargs=dict(lr=params.SGLD_lr, localization=params.SGLD_localisation, nbeta=default_nbeta(train_loader)),
                         num_chains=params.num_chains,  # How many independent chains to run
                         num_draws=params.num_draws,  # How many samples to draw per chain
                         num_burnin_steps=params.num_burnin,  # How many samples to discard at the beginning of each chain
