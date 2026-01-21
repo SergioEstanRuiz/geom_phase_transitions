@@ -19,30 +19,32 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 # This is useful for classes that are primarily used to store data without much additional functionality.
 @dataclass
 class ExperimentParams:
-    p: int = 71
-    epochs: int = 25000
+    p: int = 139
+    epochs: int = 100000
     checkpoint_epochs: int = 100
     lr: float = 0.005
     batch_size: int = 32
-    hidden_size: int = 48
-    embed_dim: int = 24
+    embed_dim: int = 1024
     train_frac: float = 0.4
     random_seed: int = 0 # Some seeds might not show grokking, or might appear later. 
     device: str = DEVICE
-    weight_decay: float = 0.0005
-    exp_name: str = "MLP_model"
+    weight_decay: float = 0.0001
+    exp_name: str = "run"
     optimiser: str = "adam" # Options: 'adam', 'sgd'
     loss: str = "mse" # Options: 'cross_entropy', 'mse', but mse is centred_loss
     num_chains: int = 3
     num_draws: int = 500
     num_burnin: int = 100
     activation: str = "quadratic"  # Options: 'relu', 'quadratic'
-    model_type: str = "MLP"  # Options: 'MLP', 'transformer', 'paper'
+    model_type: str = "paper"  # Options: 'MLP', 'transformer', 'paper'
+    hidden_size: int = 48 # for MLP model
     num_layers: int = 1  # For transformer model
     nhead: int = 2       # For transformer model
     dim_feedforward: int = 128  # For transformer model
 
 def train(train_dataset, test_dataset, params, run=None):
+    run.define_metric(step_metric="training_step", name ="*")
+
     warnings.filterwarnings("ignore")
     device = torch.device(params.device)
     if params.model_type == "paper":
@@ -139,9 +141,10 @@ def train(train_dataset, test_dataset, params, run=None):
                         online=False,
                         verbose=False,
                     )['llc/mean']
+            training_step  = (i+1)*params.batch_size
             loss_data.append(
                 {
-                    "batch": i + 1,
+                    "training_step": training_step,
                     "train_loss": train_loss,
                     "train_acc": train_acc,
                     "val_loss": val_loss,
@@ -151,6 +154,7 @@ def train(train_dataset, test_dataset, params, run=None):
             )
             run.log(
                 {
+                    "training_step": training_step,
                     "train/loss": train_loss,
                     "train/acc": train_acc,
                     "val/loss": val_loss,
