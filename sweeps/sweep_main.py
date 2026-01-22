@@ -1,4 +1,5 @@
 import sys
+import math
 # append the project root directory to the sys.path
 sys.path.append("/home/se24/geom_phase_transitions")
 from utils.produce_datasets import make_dataset, train_test_split
@@ -40,6 +41,24 @@ torch.manual_seed(params.random_seed) # set random seed for reproducibility
 dataset = make_dataset(params.p)
 train_data, test_data = train_test_split(dataset, params.train_frac, params.random_seed)
 
+M = int(params.p)
+N = len(train_data)
+total_pairs = len(dataset)
+eps = 1e-12
+mlogm = M * max(math.log(M + eps), eps)
+
+wandb.config.update(
+    {
+        "derived/M": M, 
+        "derived/N": N,
+        "derived/total_pairs": total_pairs, 
+        "derived/N_over_M2": N / (M * M),
+        "derived/N_over_MlogM": N / mlogm,
+    }
+)
+
+run.group = f"M={M}_N={N}"
+run.name = f"{params.exp_name}_M={M}_N={N}_seed={params.random_seed}"
 df = train(
     train_dataset=train_data, test_dataset=test_data, params=params, run=run
 )

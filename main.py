@@ -2,6 +2,7 @@ from utils.produce_datasets import make_dataset, train_test_split
 from training import train, ExperimentParams
 import torch
 import os
+import math
 import pandas as pd
 from dataclasses import asdict
 from utils.LLC_calculation import compute_and_save_llc
@@ -18,6 +19,23 @@ if __name__ == "__main__":
     run = wandb.init(project="geom_phase_transitions", config=asdict(params))
     dataset = make_dataset(params.p)
     train_data, test_data = train_test_split(dataset, params.train_frac, params.random_seed)
+
+    #--derived scaling law quantities (M, N, etc)--
+    M = int(params.p)
+    N = len(train_data)
+    total_pairs = len(dataset)
+    eps = 1e-12
+    mlogm = M * max(math.log(M + eps), eps)
+
+    run.config.update(
+        {
+            "derived/M": M, 
+            "derived/N": N,
+            "derived/total_pairs": total_pairs, 
+            "derived/N_over_M2": N / (M * M),
+            "derived/N_over_MlogM": N / mlogm,
+        }
+    )
 
     df = train(
         train_dataset=train_data, test_dataset=test_data, params=params, run=run

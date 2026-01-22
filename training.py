@@ -1,5 +1,6 @@
 from copy import deepcopy
 import pandas as pd
+import numpy as np
 import torch.nn as nn
 import torch
 from torch.utils.data import DataLoader
@@ -10,6 +11,7 @@ from devinterp.optim.sgld import SGLD
 from devinterp.slt.sampler import default_nbeta
 import warnings
 import os
+from typing import Dict, Any
 from utils.metrics import grokking_test3 as grokking_test
 
 
@@ -43,6 +45,65 @@ class ExperimentParams:
     dim_feedforward: int = 256  # For transformer model
     SGLD_lr: float = 5e-4
     SGLD_localisation: float = 5.0
+
+def summarize_grokking_dynamics(df: pd.DataFrame, acc_target: float = 0.95) -> Dict[str, Any]:
+    """
+    Summarize train/val accuracy trajectories into a regime label and timing stats
+    Expects columns: 'training_step', 'train_acc', 'val_acc'
+    """
+    if df is None or df.empty:
+        return dict(
+            regime="unknown", 
+            memorize_step = None, 
+            generalize_step = None,
+            gen_delay = None, 
+            max_gap = None, 
+            final_train_acc = None, 
+            final_val_acc = None,
+        )
+    
+    steps = df["training_step"].tolist()
+    train_accs = df["train_acc"].to_numpy(dtype=float)
+    val_accs = df["val_acc"].to_numpy(dtype=float)
+
+    final_train_acc = float(train_accs[-1])
+    final_val_acc = float(val_accs[-1])
+    gaps = train_accs - val_accs
+    max_gap = float(np.max(gaps))
+
+    memorize_step = None
+    generalize_step = None
+    for step, ta, va in zip(steps, train_accs, val_accs):
+        if memorize_step is None and ta >= acc_target:
+            memorize_step = int(step)
+        if generalize_step is None and va >= acc_target:
+            generalize_step = int(step)
+    
+    gen_delay = None
+    if memorize_step is not None and generalize_step is not None:
+        gen_delay = int(generalize_step - memorize_step)
+    
+    # Regime labeling
+    # 1) no generalization if end val acc is low
+    if final_val_acc < 0.90:
+        regime = "no_generalization"
+    else:
+        # 'Immediate generalization' if there's never a large train-test gap
+        # (threshold of 0.15 is a reasonable starting point; tune as desired)
+        if max_gap < 0.15:
+            regime = "immediate_generalization"
+        else:
+            regime = "grokking"
+    
+    return dict(
+        regime = regime, 
+        memorize_step = memorize_step, 
+        generalize_step = generalize_step, 
+        gen_delay = gen_delay,
+        max_gap = max_gap, 
+        final_train_acc = final_train_acc, 
+        final_val_acc = final_val_acc
+    )
 
 def train(train_dataset, test_dataset, params, run=None):
     run.define_metric(step_metric="training_step", name ="*")
@@ -172,7 +233,13 @@ def train(train_dataset, test_dataset, params, run=None):
                 break
     df = pd.DataFrame(loss_data)
     grokking = grokking_test(df["train_acc"], df["val_acc"])
-    run.log({"grokking_test": grokking})
+    summary = summarize_grokking_dynamics(df, acc_target=0.95)
+    if run is not None:
+        run.log({"grokking_test": grokking})
+        run.summary["grokking_test"] = float(grokking) if grokking is not None else None
+        for k, v in summary.items():
+            run.summary[f"dyn/{k}"] = v
+
     return df
 
 from contextlib import contextmanager, nullcontext
