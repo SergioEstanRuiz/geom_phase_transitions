@@ -5,9 +5,9 @@ import torch
 class MLP(nn.Module):
     def __init__(self, params):
         super().__init__()
-        self.embedding = nn.Embedding(params.p, params.embed_dim) 
-        self.linear1r = nn.Linear(params.embed_dim, params.hidden_size, bias=True)
-        self.linear1l = nn.Linear(params.embed_dim, params.hidden_size, bias=True)
+        self.embedding = nn.Embedding(params.p, params.hidden_dim) 
+        self.linear1r = nn.Linear(params.hidden_dim, params.hidden_size, bias=True)
+        self.linear1l = nn.Linear(params.hidden_dim, params.hidden_size, bias=True)
         self.linear2 = nn.Linear(params.hidden_size, params.p, bias=False)
         self.act = nn.GELU()
         self.p = params.p
@@ -26,20 +26,20 @@ class MLP(nn.Module):
 class transformerModel(nn.Module):
     def __init__(self, params):
         super().__init__()
-        self.embedding = nn.Embedding(params.p, params.embed_dim) 
-        encoder_layer = nn.TransformerEncoderLayer(d_model=params.embed_dim, nhead=params.nhead, dim_feedforward=params.dim_feedforward, activation='gelu')
+        self.embedding = nn.Embedding(params.p, params.hidden_dim) 
+        encoder_layer = nn.TransformerEncoderLayer(d_model=params.hidden_dim, nhead=params.nhead, dim_feedforward=params.dim_feedforward, activation='gelu')
         self.transformer_encoder = nn.TransformerEncoder(encoder_layer, num_layers=params.num_layers)
-        self.linear_out = nn.Linear(params.embed_dim, params.p, bias=False)
+        self.linear_out = nn.Linear(params.hidden_dim, params.p, bias=False)
         self.p = params.p
 
 
     def forward(self, x):
         x1 = torch.argmax(x[..., 0:self.p], dim=-1).long()
         x2 = torch.argmax(x[..., self.p:2*self.p], dim=-1).long()
-        x1 = self.embedding(x1)  # Shape: (batch_size, embed_dim)
-        x2 = self.embedding(x2)  # Shape: (batch_size, embed_dim)
-        x = torch.stack((x1, x2), dim=0)  # Shape: (2, batch_size, embed_dim)
-        x = self.transformer_encoder(x)    # Transformer expects input shape (seq_len, batch_size, embed_dim)
+        x1 = self.embedding(x1)  # Shape: (batch_size, hidden_dim)
+        x2 = self.embedding(x2)  # Shape: (batch_size, hidden_dim)
+        x = torch.stack((x1, x2), dim=0)  # Shape: (2, batch_size, hidden_dim)
+        x = self.transformer_encoder(x)    # Transformer expects input shape (seq_len, batch_size, hidden_dim)
         x = x.mean(dim=0)                  # Aggregate over sequence length dimension
         x = self.linear_out(x)             # Linear layer to produce logits
         return x
@@ -48,7 +48,7 @@ class paperModel(nn.Module):
     def __init__(self, params):
         super().__init__()
         self.p = params.p
-        self.K = params.embed_dim
+        self.K = params.hidden_dim
         self.W = nn.Linear(2*self.p, self.K, bias=False)  # Input to embedding
         self.V = nn.Linear(self.K, self.p, bias=False)    # Embedding to output
         if params.activation == "relu":

@@ -24,12 +24,12 @@ class ExperimentParams:
     checkpoint_epochs: int = 100
     lr: float = 0.001
     batch_size: int = 128
-    embed_dim: int = 1024
+    hidden_dim: int = 1024
     train_frac: float = 0.4
     random_seed: int = 0 # Some seeds might not show grokking, or might appear later. 
     device: str = DEVICE
     weight_decay: float = 0.00001
-    exp_name: str = "run"
+    exp_name: str = "runrunrun"
     optimiser: str = "adam" # Options: 'adam', 'sgd'
     loss: str = "mse" # Options: 'cross_entropy', 'mse', but mse is centred_loss
     num_chains: int = 3
