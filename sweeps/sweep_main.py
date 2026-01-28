@@ -1,7 +1,7 @@
 import sys
 import math
 # append the project root directory to the sys.path
-sys.path.append("/home/se24/geom_phase_transitions")
+sys.path.append("/Users/riyadanait/Desktop/geom_phase_transitions")
 from utils.produce_datasets import make_dataset, train_test_split
 from training import train, ExperimentParams
 import torch
@@ -25,7 +25,7 @@ def recursive_update(params: ExperimentParams, updates: dict):
         if k != "exp_name":
             setattr(params, k, v) # sets params.k = v
             params.exp_name = f"{params.exp_name}_{k}={v}" # update exp_name to reflect the change
-    params.exp_name = f"{updates['exp_name']}/{params.exp_name}"
+    #params.exp_name = f"{updates['exp_name']}/{params.exp_name}"
 
 params = ExperimentParams() # set parameters for the experiment
 
@@ -57,8 +57,7 @@ wandb.config.update(
     }
 )
 
-run.group = f"M={M}_N={N}"
-run.name = f"{params.exp_name}_M={M}_N={N}_seed={params.random_seed}"
+run.name = f"{params.exp_name}_M={M}_N={N}"
 df = train(
     train_dataset=train_data, test_dataset=test_data, params=params, run=run
 )

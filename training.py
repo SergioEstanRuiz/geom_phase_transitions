@@ -22,7 +22,7 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 @dataclass
 class ExperimentParams:
     p: int = 71
-    epochs: int = 100000
+    epochs: int = 5000
     checkpoint_epochs: int = 100
     lr: float = 0.01
     batch_size: int = 64
@@ -84,12 +84,11 @@ def summarize_grokking_dynamics(df: pd.DataFrame, acc_target: float = 0.95) -> D
         gen_delay = int(generalize_step - memorize_step)
     
     # Regime labeling
-    # 1) no generalization if end val acc is low
+    # 'no generalization' if final val acc is low
     if final_val_acc < 0.90:
         regime = "no_generalization"
     else:
         # 'Immediate generalization' if there's never a large train-test gap
-        # (threshold of 0.15 is a reasonable starting point; tune as desired)
         if max_gap < 0.15:
             regime = "immediate_generalization"
         else:
@@ -236,6 +235,7 @@ def train(train_dataset, test_dataset, params, run=None):
     summary = summarize_grokking_dynamics(df, acc_target=0.95)
     if run is not None:
         run.log({"grokking_test": grokking})
+        run.log({"dyn/regime": summary["regime"]})
         run.summary["grokking_test"] = float(grokking) if grokking is not None else None
         for k, v in summary.items():
             run.summary[f"dyn/{k}"] = v
