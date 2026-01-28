@@ -1,0 +1,2 @@
+p,epochs,checkpoint_epochs,lr,batch_size,embed_dim,train_frac,random_seed,device,weight_decay,exp_name,optimiser,loss,num_chains,num_draws,num_burnin,activation,model_type,hidden_size,num_layers,nhead,dim_feedforward,SGLD_lr,SGLD_localisation,Hessian_tracking
+53,100000,100,0.0095,128,1000,0.4,0,cuda,1e-05,sweep_lr_wd_new2/run_lr=0.0095_weight_decay=1e-05,adam,mse,3,500,100,quadratic,paper,48,2,1,256,0.0005,5.0,False

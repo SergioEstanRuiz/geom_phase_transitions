@@ -19,11 +19,11 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 # This is useful for classes that are primarily used to store data without much additional functionality.
 @dataclass
 class ExperimentParams:
-    p: int = 71
+    p: int = 53
     epochs: int = 100000
     checkpoint_epochs: int = 100
-    lr: float = 0.01
-    batch_size: int = 64
+    lr: float = 0.001
+    batch_size: int = 128
     embed_dim: int = 1024
     train_frac: float = 0.4
     random_seed: int = 0 # Some seeds might not show grokking, or might appear later. 
@@ -165,9 +165,9 @@ def train(train_dataset, test_dataset, params, run=None):
                 }
             )
             recent_val_acc.append(val_acc)
-            if len(recent_val_acc) > 3:
+            if len(recent_val_acc) > 10:
                 recent_val_acc.pop(0)
-            if len(recent_val_acc) == 3 and all(acc >= 0.95 for acc in recent_val_acc):
+            if len(recent_val_acc) == 10 and all(acc >= 0.99 for acc in recent_val_acc):
                 print(f"Early stopping at epoch {i+1}: recent val accs {recent_val_acc}")
                 break
     df = pd.DataFrame(loss_data)

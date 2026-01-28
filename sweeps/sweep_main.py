@@ -1,10 +1,11 @@
 import sys
-# append the project root directory to the sys.path
-sys.path.append("/home/se24/geom_phase_transitions")
+import os
+path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+if path not in sys.path:
+    sys.path.append(path)
 from utils.produce_datasets import make_dataset, train_test_split
 from training import train, ExperimentParams
 import torch
-import os
 import pandas as pd
 from dataclasses import asdict
 from utils.LLC_calculation import compute_and_save_llc
