@@ -1,18 +1,32 @@
-method: grid
+method: bayes
 program: ./sweeps/sweep_main.py
 project: geom_phase_transitions
 metric:
-  name: val/acc
+  name: grokking_test
   goal: maximize
 parameters:
   exp_name:
-    value: "sweep_embed4"
-  embed_dim:
-    values: [2000, 4000, 6000, 8000, 10000, 15000, 20000, 25000, 50000, 75000, 100000]
-  SGLD_lr:
-    values: [1e-5]
-  SGLD_localisation:
-    values: [100.0]
+    value: "transformer_grokking_test"
+  lr:
+    min: 0.00001
+    max: 0.01
+  batch_size:
+    min: 16
+    max: 256
+  emb_dim:
+    min: 16
+    max: 256
+  weight_decay:
+    min: 0.0
+    max: 0.0001
+  p: 
+    values: [53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107]
+  num_layers:
+    values: [1, 2, 3, 4]
+  dim_feedforward:
+    min: 16
+    max: 512
+
 
   
   # lr:

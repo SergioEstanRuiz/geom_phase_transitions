@@ -1,4 +1,7 @@
 import numpy as np
+import torch
+
+_EPS = 1e-12
 
 def empirical_correlation(x, y, tau: float) -> float:
     """Compute the empirical correlation between two lists of numbers.
@@ -74,3 +77,92 @@ def grokking_test3(train_acc, test_acc):
     level = (train_acc - test_acc).mean() # Riemann sum approximation of area between curves
     mask = (test_acc[-1] > 0.9) and (train_acc[-1] > 0.9)
     return level if mask else 0
+
+
+def _trainable_params(model):
+    return [param for param in model.parameters() if param.requires_grad]
+
+
+def _flatten_tensors(tensors):
+    return torch.cat([tensor.reshape(-1) for tensor in tensors])
+
+
+def _flat_grad(loss, params, create_graph=False, retain_graph=False):
+    grads = torch.autograd.grad(
+        loss,
+        params,
+        create_graph=create_graph,
+        retain_graph=retain_graph,
+        allow_unused=False,
+    )
+    return _flatten_tensors(grads)
+
+
+@torch.no_grad()
+def _add_vector_(params, vector, scale=1.0):
+    offset = 0
+    for param in params:
+        numel = param.numel()
+        param.add_(scale * vector[offset:offset + numel].view_as(param))
+        offset += numel
+
+
+def _sam_sharpness(model, loss_fn, x, y, rho):
+    params = _trainable_params(model)
+    model.zero_grad(set_to_none=True)
+    loss = loss_fn(model(x), y)
+    grad = _flat_grad(loss, params)
+    grad_norm = grad.norm()
+
+    if grad_norm <= _EPS:
+        return {"flatness/sharpness_sam": 0.0}
+
+    epsilon = rho * grad / (grad_norm + _EPS)
+    _add_vector_(params, epsilon)
+    perturbed_loss = loss_fn(model(x), y)
+    _add_vector_(params, epsilon, scale=-1.0)
+
+    return {"flatness/sharpness_sam": (perturbed_loss.detach() - loss.detach()).item()}
+
+
+def _hvp(loss, params, vector):
+    grad = _flat_grad(loss, params, create_graph=True, retain_graph=True)
+    directional_grad = torch.dot(grad, vector)
+    hvp = torch.autograd.grad(directional_grad, params, retain_graph=True, allow_unused=False)
+    return _flatten_tensors(hvp)
+
+
+def _hutchinson_trace(model, loss_fn, x, y, n_probes):
+    params = _trainable_params(model)
+    model.zero_grad(set_to_none=True)
+    loss = loss_fn(model(x), y)
+
+    num_params = sum(param.numel() for param in params)
+    device = params[0].device
+    dtype = params[0].dtype
+    trace_estimate = torch.zeros((), device=device, dtype=dtype)
+
+    for _ in range(n_probes):
+        probe = torch.empty(num_params, device=device, dtype=dtype).bernoulli_(0.5).mul_(2).sub_(1)
+        trace_estimate += torch.dot(probe, _hvp(loss, params, probe))
+
+    return {"flatness/trace_hutchinson": (trace_estimate / n_probes).detach().item()}
+
+
+def compute_flatness_metrics(model, loss_fn, x, y, sam_rho=1e-3, hutchinson_probes=2):
+    params = _trainable_params(model)
+    if not params:
+        return {}
+
+    was_training = model.training
+    model.eval()
+    try:
+        metrics = {}
+        if sam_rho > 0:
+            metrics.update(_sam_sharpness(model, loss_fn, x, y, sam_rho))
+        if hutchinson_probes > 0:
+            metrics.update(_hutchinson_trace(model, loss_fn, x, y, hutchinson_probes))
+        return metrics
+    finally:
+        model.zero_grad(set_to_none=True)
+        model.train(was_training)

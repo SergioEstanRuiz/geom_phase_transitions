@@ -1,0 +1,435 @@
+\subsection{$p$-Output Regression Models}
+
+Our previous theoretical results concern quadratic neural networks with a single scalar output. 
+However, in many practical settings -- for example, modular arithmetic with one-hot encoded targets -- the model has $p$ outputs and is trained either as a stack of $p$ regressors with MSE loss or as a $p$-class classifier. 
+In this appendix we consider the MSE setting and extend the quadratic-network analysis to $p$-output models.
+
+To align with the modular addition setting studied in the main text, we consider the bias-free quadratic network
+\begin{equation*}
+    f_\theta(x)=V(W^\top x)^2,
+\end{equation*}
+with parameters $\theta=(W,V)$, where $W\in\mathbb R^{d\times K}$ and $V\in\mathbb R^{p\times K}$. 
+Writing $w_j\in\mathcal{W}:=\mathbb{R}^d$ for the $j$-th column of $W$ and $v_{:j}\in\mathcal{W} := \mathbb R^p$ for the $j$-th column of $V$, the $k$-th output can be written as
+\begin{equation}
+    f_{\theta,k}(x)
+    =
+    \sum_{j=1}^K v_{kj}(w_j^\top x)^2
+    =
+    x^\top\!\left(\sum_{j=1}^K v_{kj} w_j w_j^\top\right)x
+    =
+    x^\top Q_k x,
+    \qquad k=1,\dots,p,    
+\end{equation}
+where
+\begin{equation*}
+    Q_k:=\sum_{j=1}^K v_{kj} w_j w_j^\top \in \operatorname{Sym}(\mathbb R^{d\times d}).
+\end{equation*}
+
+It is convenient to regard this model as an algebraic family of $p$-output quadratic regression maps. 
+In particular,
+we can identify the space of real symmetric $d \times d$ matrices $\operatorname{Sym}(\mathbb{R}^{d \times d})$ with the abstract  space of symmetric tensors $\operatorname{Sym}^{2}(W)$ whose elements are $w \otimes w$.
+Then the function space realised by the quadratic model class $f_{\theta}$ with architecture triple $(d,p,K)$ is the space of semi-symmetric tensors
+\begin{equation}
+    \mathcal Y:=\mathcal U\otimes \operatorname{Sym}^2(\mathcal W)
+    \cong \operatorname{Sym}(\mathbb R^{d\times d})^p,   
+\end{equation}
+where
+\begin{equation*}
+    \dim \mathcal{Y} = pD, \qquad D:= \dim \operatorname{Sym}^{2}(W) = \frac{d(d+1)}{2}.
+\end{equation*}
+
+Furthermore, the network induces the parameter map
+\begin{equation}\label{eq: param map}
+    \Phi_p(\theta)
+    =
+    \sum_{j=1}^K v_{:j}\otimes (w_j w_j^\top)
+    =
+    (Q_1,\dots,Q_p)
+    \in \mathcal Y.    
+\end{equation}
+Thus, only perturbations of $(W,V)$ that change $(Q_1,\dots,Q_p)$ can affect the realised function and hence the local geometry of the loss. 
+Our goal is therefore to study the rank of the Jacobian of $\Phi_p$ as a function of the architectural triple $(d,p,K)$.
+
+Unless otherwise stated, all results are understood under the standard regularity assumptions of \citet[Theorem~7.1]{watanabe2009slt}.
+
+\paragraph{Constructing the differential map} Given a parameter configuration $\theta$, we consider the differential of~\Cref{eq: param map}, namely
+\begin{equation}\label{eq: differential map}
+    d \Phi_{p}\mid_{\theta} \, = \sum_{j=1}^{K} \left[ \delta v_{:j} \otimes (w_{j}w_{j}^{\top}) + v_{:j}\left( \delta w_{j} w_{j}^{\top} + w_{j} \delta w_{j}^{\top} \right) \right].
+\end{equation}
+Equivalently, for each output head we have
+\begin{equation}
+    \delta Q_{k} = \sum_{j=1}^{K} \left[
+    (\delta v_{kj})(w_{j}w_{j}^{\top}) + v_{kj} \left( \delta w_{j} w_{j}^{\top} + w_{j} \delta w_{j}^{\top} \right)
+    \right]
+\end{equation}
+We note that this parameterisation is not \textit{locally} identifiable in the raw coordinates $\theta$ as each hidden unit exhibits the following scaling symmetry:
+\begin{equation}
+    w_{j} \mapsto \alpha_{j}w_{j}, \quad v_{:j} \mapsto \alpha^{-2} v_{:j}.
+\end{equation}
+This leaves the tensor $v_{:j} \otimes (w_{j} w_{j}^{\top})$ invariant.
+
+In order to proceed with our analysis of the Jacobian, we need to quotient out these symmetries by re-parametrising the differential map~\Cref{eq: differential map}.
+To this end, we fix a hidden unit $j$ and consider the following decomposition:
+\begin{equation}
+    \delta w_{j} = u_{j} + \alpha_{j} w_{j}, \quad u_{j} \perp w_{j}.
+\end{equation}
+Then
+\begin{equation*}
+    \delta w_{j} w_{j}^{\top} + w_{j} \delta w_{j}^{\top} = u_{j} w_{j}^{\top} + w_{j}u_{j}^{\top} + 2 \alpha_{j} w_{j} w_{j}^{\top}.
+\end{equation*}
+Substituting into the differential~\Cref{eq: differential map}, we obtain
+\begin{equation*}
+    d \Phi_{p}\mid_{\theta} \, = \sum_{j=1}^{K} \left[ \left( \delta v_{:j} + 2 \alpha_{j} v_{:j}\right) \otimes (w_{j}w_{j}^{\top}) + v_{:j}\left( u_{j} w_{j}^{\top} + w_{j} u_{j}^{\top} \right) \right].
+\end{equation*}
+Defining the symmetry-quotiented coefficient variation
+\begin{equation}
+    \widehat{\delta v_{:j}}:= \delta v_{:j} + 2 \alpha_{j} v_{:j},
+\end{equation}
+the quotiented differential becomes
+\begin{equation}\label{eq: quot differential map}
+    d \Phi_{p}^{\operatorname{quot.}}\mid_{\theta} \, = \sum_{j=1}^{K} \left[ \widehat{\delta v_{:j}} \otimes (w_{j}w_{j}^{\top}) + v_{:j}\left( u_{j} w_{j}^{\top} + w_{j} u_{j}^{\top} \right) \right], \quad u_{j} \perp w_{j}.
+\end{equation}
+This is precisely the object of our interest and whose rank we would like to compute.
+
+\paragraph{Single hidden unit rank contribution}
+
+Given a hidden neuron $j$, we define the following:
+\begin{equation}
+    M_{j}:= w_{j} w_{j}^{\top} \quad \textrm{and} \quad T_{j}:= \{u_{j}w_{j}^{\top} + w_{j}u_{j}^{\top}: u_{j} \perp w_{j}\}.
+\end{equation}
+We then define two subspaces of the codomain $\mathcal{Y}$:
+\begin{equation}
+    \mathcal{A}_{j}:= \mathcal{U} \otimes \operatorname{Span}(M_{j}) \quad \textrm{and} \quad \mathcal{B}_{j}:= \operatorname{Span}(v_{:j}) \otimes T_{j}.
+\end{equation}
+Then $\mathcal{C}_{j}:= \mathcal{A}_{j} + \mathcal{B}_{j}$ is precisely the subspace contributed by the hidden neuron $j$ to the quotiented Jacobian in~\Cref{eq: quot differential map}.
+Our aim is to determine the dimension of $\mathcal{C}_{j}$ considering the relation
+
+\begin{proposition}
+    Let $\mathcal{C}_{j}$ be the subspace of $\mathcal{Y}$ generated by the $j$ neuron.
+    Then
+    \begin{equation}
+        \dim \mathcal{C}_{j} = d +p-1, \quad j=1,\dots,K
+    \end{equation}
+\end{proposition}
+
+\begin{proof}
+    We have that
+    \begin{equation*}
+    \dim \mathcal{C}_{j} := \dim \mathcal{A}_{j} + \dim \mathcal{B}_{j} - \dim (\mathcal{A}_{j} \cap \mathcal{B}_{j}).
+    \end{equation*}
+    \textbf{Claim 1: $\dim \mathcal{A}_{j} = p$.}
+    Assume that $w_{j} \not = 0$ and $v_{:j}\not = 0$.
+    Then $M_{j}=w_{j} w_{j}^{\top}$ is non zero and hence the linear map
+    \begin{equation}
+        \mathcal{U} \to \mathcal{A}_{j}, \quad \beta \mapsto \beta \otimes M_{j},
+    \end{equation}
+    where $\beta \in \mathcal{U}$, is injective (i.e. $\beta \otimes M_{j} =0 \implies \beta =0 $).
+    Hence $\dim \mathcal{A}_{j} = p$.
+    \\
+    
+    \noindent
+    \textbf{Claim 2: $\dim \mathcal{B}_{j}=d-1$.}
+    Let $\mathcal{W}_{j}^{\top}:=\{u: u\perp w_{j}\}$.
+    Define the linear map
+    \begin{equation}
+        \mathcal{W}_{j}^{\top} \to \mathcal{B}_{j}, \quad u\mapsto v_{:j} \otimes (uw_{j}^{\top} + w_{j}u^{\top}).
+    \end{equation}
+    Since $v_{:j} \not = 0$, it is sufficient to show that
+    \begin{equation}
+        uw_{j}^{\top} + w_{j}u^{\top} =0 \implies u=0.
+    \end{equation}
+    Begin by multiplying the left-hand side of the above by $w_{j}$:
+    \begin{equation}
+        (uw_{j}^{\top} + w_{j}u^{\top})w_{j} = u \|w_{j}\|^{2} =0.
+    \end{equation}
+    Since $w_{j}\not =0$, the above holds iff $u=0$.
+    Hence, the map is injective and we have
+    \begin{equation}
+        \dim \mathcal{B}_{j} = \dim \mathcal{W}_{j}^{\top} = d-1.
+    \end{equation}
+    \\
+    \noindent
+    \textbf{Claim 3: $\mathcal{A}_{j} \cap \mathcal{B}_{j}=\{0\}$.}
+    Let $y \in \mathcal{A}_{j} \cap \mathcal{B}_{j}$.
+    Then
+    \begin{equation}
+        y = \beta \otimes M_{j} = v_{:j} \otimes N
+    \end{equation}
+    for some $\beta \in \mathcal{U}$ and some
+    \begin{equation}
+        N= uw_{j}^{\top} + w_{j}u^{\top}\in T_{j}, \quad u \perp w_{j}.
+    \end{equation}
+    Consider the Frobenius inner product with $M_{j}= w_{j} w_{j}^{\top}$.
+    We have
+    \begin{equation}
+        \langle N,M_{j} \rangle_{F} = \langle uw_{j}^{\top} + w_{j}u^{\top}, w_{j}w_{j}^{\top} \rangle_{F} =0
+    \end{equation}
+    since $u \perp w_{j}$.
+    However, if $\beta \otimes M_{j} = v_{:j} \otimes N$, then for any output coordinate where $v_{:j} \not =0$, the corresponding component of $x$ is simultaneously a scalar multiple of $M_{j}$ and of $N$.
+    So, $N$ must also be proportional to $M_{j}$.
+    But we have already shown that $M_{j}$ and $N$ are orthogonal to each other, which implies that $N=0$.
+    Then $y=0$ and therefore $\mathcal{A}_{j} \cap \mathcal{B}_{j} = \{0\}$.
+\end{proof}
+
+\paragraph{Geometric Interpretation}
+
+Consider the set of single hidden neuron contributions
+\begin{equation}
+    \widehat{\mathcal{X}} := \{v \otimes (ww^{\top}) : v\in \mathcal{U}, w\in \mathcal{W}\} \subset \mathcal{Y}.
+\end{equation}
+This set is an \textit{affine cone}, and an element $x \in \widehat{\mathcal{X}}$ is exactly one rank-one partially symmetric tensor $v\otimes (ww^{\top})$.
+The set is a \textit{cone} because it is a set that is closed under scalar multiplication, and it is \textit{affine} because it is viewed inside the ordinary vector space $\mathcal{Y}$.
+We can define its associated \textit{projective variety} $\mathcal{X}$ by identifying points in $x$ up to non-zero scalar multiplication:
+\begin{equation}\label{eq: projection of X}
+    \mathcal{X}=\{\left[v \otimes (ww^{\top})\right]\} \subset \mathbb{P}(\mathcal{Y}),
+\end{equation}
+where $[\cdot]$ is read as ``up to non-zero scalar".
+Then the affine cone is simply the preimage of the projective variety under the map
+\begin{equation}
+    \mathcal{Y} \setminus \{0\} \to \mathbb{P}(\mathcal{Y}), \quad y \mapsto [y].
+\end{equation}
+We can interpret the projective object $\mathcal{X}$ as remembering only the \textit{directions} of a rank-one atom, whereas $\widehat{\mathcal{X}}$ remembers the tensor itself.
+
+We can rewrite the projection of $\widehat{\mathcal{X}}$ in the following way:
+\begin{equation}
+    \mathcal{X} = \mathbb{P}(\mathcal U) \times \nu_{2}(\mathbb{P}(\mathcal W)) \subset \mathbb{P}(\mathcal Y).
+\end{equation}
+This is a \textit{Segre-Veronese} variety, i.e. it consists of two ingredients: a linear $v$-part that corresponds to a \textit{Segre-type factor} and a quadratic $w$-part that corresponds to a \textit{Veronese-type} factor.
+The \textit{quadratic Veronese embedding} $\nu_{2}$ simply sends a point to all degree-two monomials in its coordinates.
+For example, if 
+\begin{equation*}
+    w=(w_{1}, \dots, w_{d}),
+\end{equation*}
+then the map $\nu_{2}$ sends it to
+\begin{equation*}
+    (w_{1}^{2}, w_{1}w_{2}, \dots, w_{i}w_{j}, \dots, w_{d}^{2})
+\end{equation*}
+but this contains precisely the same information as the rank-one symmetric matrix $ww^{\top}$.
+Hence, it is simply the map
+\begin{equation*}
+    [w] \mapsto [ww^{\top}].
+\end{equation*}
+
+\begin{proposition}\label{prop: tangent space to a point xj}
+    Given a non-zero point $x_{j} \in \widehat{\mathcal{X}}$, the tangent space to $\widehat{\mathcal{X}}$ at $x_{j}$ is exactly
+    \begin{equation}
+        T_{x_{j}} \widehat{\mathcal{X}} = \{ \beta \otimes (w_{j} w_{j}^{\top}) + v_{:j} \otimes (uw_{j}^{\top} + w_{j}u^{\top}): \beta \in U, u \perp w_{j}\}.
+    \end{equation}
+    That is $T_{x_{j}} \widehat{\mathcal{X}} = \mathcal{C}_{j}$.
+\end{proposition}
+
+\begin{proof}
+    Let $x_{j} = v_{:j} \otimes(ww^{\top})$.
+    To compute the tangent space at $x_{j}$, we parametrise the set $\widehat{\mathcal X}$ by the map $g$ whose image is precisely $\widehat{\mathcal X}$.
+    Hence, we define
+    \begin{equation}
+        f: \mathcal U \times \mathcal W \to \mathcal Y, \quad f(v,w)= v \otimes (ww^{\top})
+    \end{equation}
+    such that the derivate of $f$ at $(v_{:j},w_{j})$ is the tangent space at $x_{j}$.
+    For clarity, we can compute the derivate by considering the perturbation
+    \begin{equation}
+        v(t) = v_{:j} + t\beta, \quad w(t) = w_{j} + t \delta w.
+    \end{equation}
+    Then
+    \begin{equation*}
+        f(v(t), w(t)) = (v_{:j} + t\beta) \otimes \left( (w_{j} + t \delta w) (w_{j} + t \delta w)(w_{j} + t \delta w)^{\top} \right).
+    \end{equation*}
+    Expanding and collecting linear $t$-terms
+    \begin{equation*}
+        f(v(t), w(t)) = v_{:j} \otimes (w_{j}w_{j}^{\top}) + t \left[ \beta \otimes (w_{j}w_{j}^{\top}) + v_{:j} \otimes (\delta w_{j}w_{j}^{\top} + w_{j} \delta w^{\top}) \right] + O(t^2).
+    \end{equation*}
+    Hence
+    \begin{equation}
+        d f_{(v_{:j},w_{j})}(\beta, \delta w) = \beta \otimes (w_{j}w_{j}^{\top}) + v_{:j} \otimes (\delta w_{j}w_{j}^{\top} + w_{j} \delta w^{\top})
+    \end{equation}
+    Again, by considering the decomposition
+    \begin{equation}
+        \delta w = u + \alpha w_{j}, \quad u \perp w_{j}
+    \end{equation}
+    we can obtain
+    \begin{equation}
+        d f_{(v_{:j},w_{j})}(\beta, \delta w) = (\beta + 2 \alpha v_{:j}) \otimes (w_{j}w_{j}^{\top}) + v_{:j} \otimes (uw_{j}^{\top} + w_{j} u^{\top}).    
+    \end{equation}
+    However, the term $\alpha w_{j}$ does not introduce any new directions in the tangent space since it is just a coefficient of $w_{j}w_{j}^{\top}$.
+    So, it can be absorbed into $\beta$ as it is arbitrary.
+    Therefore, the image of the differential is precisely $\mathcal{C}_{j}$.
+\end{proof}
+
+\noindent
+Since $x_{j}:= v_{:j} \otimes (w_{j}w_{j}^T) \in \widehat{\mathcal{X}}$ is the output of each atom $j=1, \dots K$, we have
+\begin{equation}
+    \Phi_{p}(\theta) = x_{1} + \dots + x_{K}.
+\end{equation}
+
+\begin{proposition}
+    For any $\theta \in \theta$ where $w_{j} \not = 0$ and $v_{:j} \not = 0$, we have that
+    \begin{equation}
+        \operatorname{Im} J \Phi_{p}^{\operatorname{quot}}(\theta) = T_{x_{1}}\widehat{\mathcal X} + \dots + T_{x_{K}}\widehat{\mathcal X}.
+    \end{equation}
+\end{proposition}
+
+\begin{proof}
+    Given the quotiented differential map in~\Cref{eq: quot differential map}
+    \begin{equation*}
+    d \Phi_{p}^{\operatorname{quot.}}\mid_{\theta} \, = \sum_{j=1}^{K} \left[ \widehat{\delta v_{:j}} \otimes (w_{j}w_{j}^{\top}) + v_{:j}\left( u_{j} w_{j}^{\top} + w_{j} u_{j}^{\top} \right) \right], \quad u_{j} \perp w_{j},        
+    \end{equation*}
+    we have that the $j$-th summand ranges over $T_{x_{j}}\widehat{\mathcal X}$ by~\Cref{prop: tangent space to a point xj}.
+    Hence, the image of the full quotient Jacobian is
+    \begin{equation}
+        \operatorname{Im} J \Phi_{p}^{\textrm{quot}}(\theta)=\sum_{j=1}^{K} T_{x_{j}}\widehat{\mathcal X}.
+    \end{equation}
+\end{proof}
+
+\paragraph{Why secant-varieties are relevant}
+As previously discussed, each hidden neuron realises a semi-symmetric tensor of the form $v \otimes (ww^{\top})$ and is an point in the affine cone $\widehat{\mathcal X}$.
+A width-$K$ network therefore produces a sum of $K$ such one-atom tensors
+\begin{equation*}
+    \Phi_{p}(\theta) = \sum_{j=1}^{K} v_{:j} \otimes (w_{j} w_{j}^{\top}).
+\end{equation*}
+Hence, a width-$K$ model class is precisely the set of all sums of $K$ points in $\widehat{\mathcal X}$.
+
+To study this sum-set geometrically, it is convenient for us to pass to the projective space where tensors differing only by an overall non-zero scalar are identified.
+This projectivisation of $\widehat{\mathcal X}$ is the Segre-Varonese variety
+\begin{equation*}
+    \mathcal X \subset \mathbb{P}(\mathcal Y)
+\end{equation*}
+whose points are precisely the projective classes of single hidden neuron atoms $[v \otimes (ww^{\top})].$
+The corresponding width-$K$ model class is then encoded by \textit{$K$-th secant variety of $\mathcal X$}, defined by:
+\begin{equation}
+    \sigma_{K}(\mathcal X) := \overline{\bigcup_{x_{1}, \dots, x_{K}\in \mathcal X} \langle x_{1}, \dots, x_{k} \rangle}.
+\end{equation}
+Here $\langle x_{1}, \dots, x_{k} \rangle$ denotes the \textit{projective linear span} of the points $x_{1}, \dots, x_{K}\in \mathcal X$, i.e. all projective classes of linear combinations $[c_{1}x_{1} + \dots + c_{K}x_{K}]$.
+The closure is included so that \textit{limiting sums} are also captured.
+In this sense, the secant variety is the natural projective geometric model of width-$K$ outputs that we would like to study.
+
+The relevance of this construction is that it allows us to relate the rank of the quotient Jacobian $\Phi_{p}$ to the dimension of the corresponding secant variety.
+We can obtain this relationship in in two steps.
+
+First, let
+\begin{equation}
+    x_{j}:= v_{:j} \otimes (w_{j}w_{j}^{\top}) \in \widehat{\mathcal X}, \quad y:= x_{1} + \dots x_{K} = \Phi_{p}(\theta).
+\end{equation}
+By~\cref{prop: tangent space to a point xj}, we now that the $j$-th hidden neuron contributes exactly the tangent space $T_{x_{j}}\widehat{\mathcal X}$ to the quotient Jacobian.
+Hence, the image of the quotient Jacobian is precisely
+\begin{equation}
+    \operatorname{Im} J \Phi_{p}(\theta) = T_{x_{1}}\widehat{\mathcal X} + \dots + T_{x_{K}}\widehat{\mathcal X}.
+\end{equation}
+
+Second, \textit{Terracini's lemma} identifies this same tangent space sum with the tangent space to the secant model class at a general point.
+More precisely:
+\begin{theorem}[Terracini's lemma (informal)]
+    If $x_{1}, \dots, x_{K} \in \widehat{\mathcal X}$ are in a general position and $y=x_{1} + \dots + x_{K}$ is a generic \textir{red}{smooth} point of the affine secant cone over $\sigma_{K}(\mathcal X)$, then
+    \begin{equation}
+        T_{y} \widehat{\sigma_{K}(\mathcal X)} = T_{x_{1}}\widehat{\mathcal X} + \dots + T_{x_{K}}\widehat{\mathcal X}.
+    \end{equation}
+    Equivalently, the tangent space at the generic point $y$ of the width-$K$ model class is simply the sum of the tangent spaces of the constituent one-atom varieties.
+\end{theorem}
+Hence, we obtain the result that
+\begin{equation}
+    \operatorname{Im} J \Phi_{p}^{\operatorname{quot}}(\theta) = T_{y} \widehat{\sigma_{K}(\mathcal X)},
+\end{equation}
+and therefore
+\begin{equation}\label{eq: secant dimension}
+    \operatorname{Rank} J \Phi_{p}^{\operatorname{quot}}(\theta) = \dim T_{y} \widehat{\sigma_{K}(\mathcal X)} = \dim \widehat{\sigma_{K}(\mathcal X)},
+\end{equation}
+where we have used the assumption that $y$ is a generic smooth point.
+Equivalently, the generic rank of the quotient Jacobian is reduced to the problem of computing the dimension of the secant variety associated with the one-atom model class.
+
+\paragraph{LLC results}
+
+\Cref{eq: secant dimension} provides us with the identifiable dimension of the local parameter space at a generic $\theta$.
+By applying the reparametrisation theorem (~\Cref{thm: reparam}) that links the LLC to half the number of local identifiable dimensions under MSE, we obtain the following generic formula.
+
+\begin{theorem}[Generic secant-dimension formula for LLC]\label{thm: generic secant-dim LLC formula}
+    Let $f_{\theta}$ be a quadratic network with architecture triple $(d,p,K)$, parametrised by $\theta =(V,W)$, that realises the parameter map:
+    \begin{equation}
+            \Phi_p(\theta)
+    =
+    \sum_{j=1}^K v_{:j}\otimes (w_j w_j^\top)
+    \in \mathcal Y, \quad \mathcal{Y}:= \mathbb{R}^{p} \otimes \operatorname{Sym} (\mathbb{R}^{d \times d}).
+    \end{equation}
+    Let
+    \begin{equation}
+        \mathcal{X}= \{[v\otimes(ww^{\top})]: v\in \mathcal{U}, w\in \mathcal{W}\}
+        \subset \mathbb{P}(\mathcal{Y})
+    \end{equation}
+    denote the projective variety of one-hidden neuron atoms, and $\widehat{\sigma_{K}(X)}$ denote the affine cone over its $K$-th secant variety.
+    Assume the following:
+    \begin{enumerate}
+        \item $\theta$ is a generic parameter point;
+        \item $w_{j} \not = 0$ and $v_{:j} \not =0$ for all $j=1,\dots, K$;
+        \item the atoms $x_{1},\dots, x_{K}$ are in a general position and $y=x_{1}+\dots + x_{K}$ is a generic smooth point on $\widehat{\sigma_{K}(\mathcal X)}$;
+        \item the assumptions of the reparameterisation theorem for MSE (\Cref{thm: reparam}) hold at $y=\Phi_{p}(\theta)$.
+    \end{enumerate}
+    Then
+    \begin{equation}
+        \operatorname{Rank} J \Phi_{p}^{\operatorname{quot}}(\theta) = \dim \widehat{\sigma_{K}(\mathcal X)},
+    \end{equation}
+    and consequently
+    \begin{equation}
+        \lambda = \frac{1}{2} \dim \widehat{\sigma_{K}(\mathcal X)}.
+    \end{equation}
+\end{theorem}
+
+So determining the LLC boils down to determining the expected dimension of the secant variety $\widehat{\sigma_{k}(\mathcal X)}$ at a generic smooth point $y$.
+Consider the following: each hidden neuron contributes $d+p-1$ quotient directions while the ambient space has dimension
+\begin{equation}
+    pD = p \frac{d(d+1)}{2}.
+\end{equation}
+Hence the expected dimension at a generic point is given by
+\begin{equation}
+    r_{\textrm{exp}} := \min \left( K(p+d-1), p \frac{d(d+1)}{2} \right).
+\end{equation}
+We say that the architecture $(p,d,K)$ is \textit{non-defective} if
+\begin{equation}
+    \dim \widehat{\sigma_{K}(X)} = r_{\textrm{exp}},
+\end{equation}
+and defective otherwise.
+Under this assumption, the LLC takes the explicit closed form.
+\begin{corollary}\label{cor: generic LLC}
+    Under the assumptions of~\Cref{thm: generic secant-dim LLC formula}, and assuming that the secant variety $\sigma_{K}(\mathcal X)$ is non-defective.
+    Then
+    \begin{equation}
+        \operatorname{Rank} J \Phi_{p}^{\operatorname{quot}}(\theta) = \min \left( K(p+d-1), p \frac{d(d+1)}{2} \right).,
+    \end{equation}
+    and consequently
+    \begin{equation}
+        \lambda = \frac{1}{2} \min \left( K(p+d-1), p \frac{d(d+1)}{2} \right).
+    \end{equation}    
+\end{corollary}
+
+\paragraph{Regime splitting}
+Considering this projective geometry approach, two \textit{regimes} naturally emerge in our analysis according to the comparison between the expected quotient dimension $K(p+d-1)$ and the ambient dimension $pD$.
+
+\begin{corollary}[Subabundant regime]
+    Suppose that the assumptions of \Cref{cor: generic LLC} hold, where the architecture is non-defective and satisfies
+    \begin{equation}
+        K(d+p-1) < p \frac{d(d+1)}{2}.
+    \end{equation}
+    Then
+    \begin{equation}
+        \operatorname{Rank} J \Phi_{p}^{\operatorname{quot}}(\theta) = K(p+d-1), \quad \lambda = \frac{K(p+d-1)}{2}.
+    \end{equation}
+\end{corollary}
+
+\begin{proof}
+    In the subabundant regime, the expected secant dimension is precisely $K(d+p-1)$.
+    Non-defectivity implies that the actual secant dimension is equal to the expected secant dimension.
+    The result follows from the previous corollary.
+\end{proof}
+
+\begin{corollary}[Superabundant Regime]
+    Suppose that the assumptions of \Cref{cor: generic LLC} hold, where the architecture is non-defective and satisfies
+    \begin{equation}
+        K(d+p-1) \geq p \frac{d(d+1)}{2}.
+    \end{equation}
+    Then
+    \begin{equation}
+        \operatorname{Rank} J \Phi_{p}^{\operatorname{quot}}(\theta) = p\frac{d(d+1)}{2}, \quad \lambda = p\frac{d(d+1)}{4}.
+    \end{equation}    
+\end{corollary}
+
+\begin{proof}
+    In the superabundant regime, the expected secant dimension saturates the ambient space dimension $pD$.
+    Again, non-defectivity implies that the actual secant dimension equals $pD$, and the LLC formula follows immediately.
+\end{proof}

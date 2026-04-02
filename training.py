@@ -10,7 +10,7 @@ from devinterp.optim.sgld import SGLD
 from devinterp.slt.sampler import default_nbeta
 import warnings
 import os
-from utils.metrics import grokking_test3 as grokking_test
+from utils.metrics import compute_flatness_metrics, grokking_test3 as grokking_test
 
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
@@ -22,30 +22,34 @@ class ExperimentParams:
     p: int = 53
     epochs: int = 100000
     checkpoint_epochs: int = 100
-    lr: float = 0.001
+    lr: float = 0.0001
     batch_size: int = 128
     hidden_dim: int = 1024
     train_frac: float = 0.4
     random_seed: int = 0 # Some seeds might not show grokking, or might appear later. 
     device: str = DEVICE
     weight_decay: float = 0.00001
-    exp_name: str = "runrunrun"
+    exp_name: str = "flatness_test"
     optimiser: str = "adam" # Options: 'adam', 'sgd'
     loss: str = "mse" # Options: 'cross_entropy', 'mse', but mse is centred_loss
     num_chains: int = 3
     num_draws: int = 500
     num_burnin: int = 100
-    activation: str = "quadratic"  # Options: 'relu', 'quadratic'
-    model_type: str = "paper"  # Options: 'MLP', 'transformer', 'paper'
+    activation: str = "relu"  # Options: 'relu', 'quadratic'
+    model_type: str = "transformer"  # Options: 'MLP', 'transformer', 'paper'
     hidden_size: int = 48 # for MLP model
     num_layers: int = 2  # For transformer model
     nhead: int = 1       # For transformer model
     dim_feedforward: int = 256  # For transformer model
     SGLD_lr: float = 5e-4
     SGLD_localisation: float = 5.0
+    log_flatness_metrics: bool = True
+    flatness_sam_rho: float = 1e-3
+    flatness_hutchinson_probes: int = 2
 
 def train(train_dataset, test_dataset, params, run=None):
-    run.define_metric(step_metric="training_step", name ="*")
+    if run is not None:
+        run.define_metric(step_metric="training_step", name ="*")
 
     warnings.filterwarnings("ignore")
     device = torch.device(params.device)
@@ -111,6 +115,7 @@ def train(train_dataset, test_dataset, params, run=None):
     loss_data = []
     recent_val_acc = []  # track last few validation accuracies for early stopping
     for i in range(params.epochs):
+        model.train()
         # Sample random batch of data
         batch = next(iter(train_loader))
         X, Y = batch
@@ -125,6 +130,16 @@ def train(train_dataset, test_dataset, params, run=None):
         if (i + 1) % checkpoint_every == 0:
             val_acc, val_loss = test(model, test_dataset)
             train_acc, train_loss = test(model, train_dataset)
+            flatness_metrics = {}
+            if params.log_flatness_metrics:
+                flatness_metrics = compute_flatness_metrics(
+                    model=model,
+                    loss_fn=loss_fn,
+                    x=X,
+                    y=Y,
+                    sam_rho=params.flatness_sam_rho,
+                    hutchinson_probes=params.flatness_hutchinson_probes,
+                )
             # Avoid distributed all_reduce inside devinterp LLC callback when running single-process on GPU
             if llc_device.type == "cuda":
                 os.environ.setdefault("USE_SPMD", "1")
@@ -152,18 +167,21 @@ def train(train_dataset, test_dataset, params, run=None):
                     "val_loss": val_loss,
                     "val_acc": val_acc,
                     "llc": llc,
+                    **flatness_metrics,
                 }
             )
-            run.log(
-                {
-                    "training_step": training_step,
-                    "train/loss": train_loss,
-                    "train/acc": train_acc,
-                    "val/loss": val_loss,
-                    "val/acc": val_acc,
-                    "llc": llc,
-                }
-            )
+            if run is not None:
+                run.log(
+                    {
+                        "training_step": training_step,
+                        "train/loss": train_loss,
+                        "train/acc": train_acc,
+                        "val/loss": val_loss,
+                        "val/acc": val_acc,
+                        "llc": llc,
+                        **flatness_metrics,
+                    }
+                )
             recent_val_acc.append(val_acc)
             if len(recent_val_acc) > 10:
                 recent_val_acc.pop(0)
@@ -172,7 +190,8 @@ def train(train_dataset, test_dataset, params, run=None):
                 break
     df = pd.DataFrame(loss_data)
     grokking = grokking_test(df["train_acc"], df["val_acc"])
-    run.log({"grokking_test": grokking})
+    if run is not None:
+        run.log({"grokking_test": grokking})
     return df
 
 from contextlib import contextmanager, nullcontext
