@@ -1,0 +1,2 @@
+p,epochs,checkpoint_epochs,lr,batch_size,hidden_dim,train_frac,random_seed,device,weight_decay,exp_name,optimiser,loss,num_chains,num_draws,num_burnin,activation,model_type,hidden_size,num_layers,nhead,dim_feedforward,SGLD_lr,SGLD_localisation
+83,100000,100,0.002793449414144338,100,1024,0.4,0,cuda,3.852267431332413e-05,transformer_grokking_test/transformer_grokking_test_batch_size=100_dim_feedforward=239_emb_dim=218_lr=0.002793449414144338_num_layers=2_p=83_weight_decay=3.852267431332413e-05,adam,mse,3,500,100,relu,transformer,48,2,1,239,0.0005,5.0

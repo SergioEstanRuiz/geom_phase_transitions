@@ -4,4 +4,4 @@ __pycache__
 wandb
 extra_info.md
 miscellaneous/
-results/
+results/seed_experiment
