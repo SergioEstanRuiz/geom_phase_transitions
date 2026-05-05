@@ -35,8 +35,8 @@ class ExperimentParams:
     num_chains: int = 3
     num_draws: int = 500
     num_burnin: int = 100
-    activation: str = "relu"  # Options: 'relu', 'quadratic'
-    model_type: str = "transformer"  # Options: 'MLP', 'transformer', 'paper'
+    activation: str = "quadratic"  # Options: 'relu', 'quadratic'
+    model_type: str = "paper"  # Options: 'MLP', 'transformer', 'paper'
     hidden_size: int = 48 # for MLP model
     num_layers: int = 2  # For transformer model
     nhead: int = 1       # For transformer model
