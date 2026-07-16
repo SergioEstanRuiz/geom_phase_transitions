@@ -1,5 +1,5 @@
-## Geometric Phase Transitions in Grokking (ICML)
-This repository accompanies our ICML paper on geometric phase transitions during grokking. We study modular arithmetic tasks through singular learning theory, estimate the local learning coefficient (LLC) with stochastic gradient Langevin dynamics, and track how loss landscapes evolve during training.
+## Geometric Phase Transitions in Grokking
+This repository accompanies our paper on geometric phase transitions during grokking. We study modular arithmetic tasks through singular learning theory, estimate the local learning coefficient (LLC) with stochastic gradient Langevin dynamics, and track how loss landscapes evolve during training.
 
 ## Repository Structure
 - `main.py`: single-run entrypoint (training + LLC logging + result saving).
